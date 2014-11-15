@@ -8,15 +8,25 @@ use work.StringP.all;
 package AssertP is
 
 
-  procedure assert_true    (a : boolean);
-  procedure assert_false   (a : boolean);
+  procedure assert_true (a : in boolean);
+  procedure assert_true (a : in boolean; str : in string);
 
-  procedure assert_equal   (a : in integer; b : in integer);
-  procedure assert_equal   (a : in std_logic_vector; b : in std_logic_vector);
-  procedure assert_equal   (a : in string; b : in string);
+  procedure assert_false (a : in boolean);
+  procedure assert_false (a : in boolean; str : in string);
+
+  procedure assert_equal (a : in integer; b : in integer);
+  procedure assert_equal (a : in integer; b : in integer; str : in string);
+  procedure assert_equal (a : in std_logic_vector; b : in std_logic_vector);
+  procedure assert_equal (a : in std_logic_vector; b : in std_logic_vector; str : in string);
+  procedure assert_equal (a : in string; b : in string);
+  procedure assert_equal (a : in string; b : in string; str : in string);
 
   procedure assert_unequal (a : in integer; b : in integer);
+  procedure assert_unequal (a : in integer; b : in integer; str : in string);
   procedure assert_unequal (a : in std_logic_vector; b : in std_logic_vector);
+  procedure assert_unequal (a : in std_logic_vector; b : in std_logic_vector; str : in string);
+  procedure assert_unequal (a : in string; b : in string);
+  procedure assert_unequal (a : in string; b : in string; str : in string);
 
 
 end package AssertP;
@@ -26,17 +36,31 @@ end package AssertP;
 package body AssertP is
 
 
-  procedure assert_true (a : boolean) is
+  procedure assert_true (a : in boolean) is
   begin
     assert a
       report "FAILURE: a should be evaluate to true"
       severity failure;
   end procedure assert_true;
 
-  procedure assert_false (a : boolean) is
+  procedure assert_true (a : in boolean; str : in string) is
+  begin
+    assert a
+      report "FAILURE: " & str
+      severity failure;
+  end procedure assert_true;
+
+  procedure assert_false (a : in boolean) is
   begin
     assert not(a)
       report "FAILURE: a should be evaluate to false"
+      severity failure;
+  end procedure assert_false;
+
+  procedure assert_false (a : in boolean; str : in string) is
+  begin
+    assert not(a)
+      report "FAILURE: " & str
       severity failure;
   end procedure assert_false;
 
@@ -47,6 +71,13 @@ package body AssertP is
       severity failure;
   end procedure assert_equal;
 
+  procedure assert_equal (a : in integer; b : in integer; str : in string) is
+  begin
+    assert a = b
+      report "FAILURE: " & str
+      severity failure;
+  end procedure assert_equal;
+
   procedure assert_equal (a : in std_logic_vector; b : in std_logic_vector) is
   begin
     assert a = b
@@ -54,10 +85,24 @@ package body AssertP is
       severity failure;
   end procedure assert_equal;
 
-   procedure assert_equal (a : in string; b : in string) is
-   begin
+  procedure assert_equal (a : in std_logic_vector; b : in std_logic_vector; str : in string) is
+  begin
+    assert a = b
+      report "FAILURE: " & str
+      severity failure;
+  end procedure assert_equal;
+
+  procedure assert_equal (a : in string; b : in string) is
+  begin
     assert a = b
       report "FAILURE: " & a & " should be equal to " & b
+      severity failure;
+  end procedure assert_equal;
+
+  procedure assert_equal (a : in string; b : in string; str : in string) is
+  begin
+    assert a = b
+      report "FAILURE: " & str
       severity failure;
   end procedure assert_equal;
 
@@ -68,10 +113,38 @@ package body AssertP is
       severity failure;
   end procedure assert_unequal;
 
+  procedure assert_unequal (a : in integer; b : in integer; str : in string) is
+  begin
+    assert a /= b
+      report "FAILURE: " & str
+      severity failure;
+  end procedure assert_unequal;
+
   procedure assert_unequal (a : in std_logic_vector; b : in std_logic_vector) is
   begin
     assert a /= b
       report "FAILURE: " & to_string(a) & " should be unequal to " & to_string(b)
+      severity failure;
+  end procedure assert_unequal;
+
+  procedure assert_unequal (a : in std_logic_vector; b : in std_logic_vector; str : in string) is
+  begin
+    assert a /= b
+      report "FAILURE: " & str
+      severity failure;
+  end procedure assert_unequal;
+
+  procedure assert_unequal (a : in string; b : in string) is
+   begin
+    assert a /= b
+      report "FAILURE: " & a & " should be unequal to " & b
+      severity failure;
+  end procedure assert_unequal;
+
+  procedure assert_unequal (a : in string; b : in string; str : in string) is
+   begin
+    assert a /= b
+      report "FAILURE: " & str
       severity failure;
   end procedure assert_unequal;
 

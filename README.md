@@ -10,8 +10,8 @@ Package with various assertion procedures
 
 * `assert_true(x[, str])` checks if boolean x = false, prints string str to console str when given
 * `assert_false(x[, str])` checks if boolean x = false, prints string str to console str when given
-* `assert_equal(x, y, [str])` checks if x = y, prints string str to console str when given
-* `assert_unequal(x, y, [str])` checks if x /= y, prints string str to console str when given
+* `assert_equal(x, y[, str])` checks if x = y, prints string str to console str when given
+* `assert_unequal(x, y[, str])` checks if x /= y, prints string str to console str when given
 
 ##### SimP
 Package with various components general useful for simulation

@@ -1,7 +1,8 @@
 library ieee;
   use ieee.std_logic_1164.all;
 
-use work.StringP.all;
+library libvhdl;
+  use libvhdl.StringP.all;
 
 
 

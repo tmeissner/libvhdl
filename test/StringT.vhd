@@ -2,8 +2,9 @@ library ieee;
   use ieee.std_logic_1164.all;
   use ieee.numeric_std.all;
 
-use work.StringP.all;
-use work.AssertP.all;
+library libvhdl;
+  use libvhdl.StringP.all;
+  use libvhdl.AssertP.all;
 
 
 

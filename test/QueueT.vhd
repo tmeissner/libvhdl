@@ -2,7 +2,9 @@ library ieee;
   use ieee.std_logic_1164.all;
   use ieee.numeric_std.all;
 
-use work.AssertP.all;
+library libvhdl;
+  use libvhdl.AssertP.all;
+  use libvhdl.QueueP.all;
 
 
 
@@ -14,8 +16,8 @@ end entity QueueT;
 architecture sim of QueueT is
 
 
-  shared variable sv_simple_queue : work.QueueP.t_simple_queue;
-  shared variable sv_list_queue   : work.QueueP.t_list_queue;
+  shared variable sv_simple_queue : t_simple_queue;
+  shared variable sv_list_queue   : t_list_queue;
 
 
 begin

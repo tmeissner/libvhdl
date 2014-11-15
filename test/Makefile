@@ -5,12 +5,14 @@ VHD_STD = 02
 sim: queuet stringt
 
 queuet : QueueT.vhd $(SIM_SRC)/QueueP.vhd $(SIM_SRC)/StringP.vhd $(SIM_SRC)/AssertP.vhd
-	ghdl -a --std=$(VHD_STD) $(SIM_SRC)/StringP.vhd $(SIM_SRC)/AssertP.vhd $(SIM_SRC)/QueueP.vhd QueueT.vhd
+	ghdl -a --std=$(VHD_STD) --work=libvhdl $(SIM_SRC)/StringP.vhd $(SIM_SRC)/AssertP.vhd $(SIM_SRC)/QueueP.vhd
+	ghdl -a --std=$(VHD_STD) QueueT.vhd
 	ghdl -e --std=$(VHD_STD) QueueT
 	ghdl -r --std=$(VHD_STD) QueueT
 
 stringt : StringT.vhd $(SIM_SRC)/StringP.vhd $(SIM_SRC)/AssertP.vhd
-	ghdl -a --std=$(VHD_STD) $(SIM_SRC)/StringP.vhd $(SIM_SRC)/AssertP.vhd StringT.vhd
+	ghdl -a --std=$(VHD_STD) --work=libvhdl $(SIM_SRC)/StringP.vhd $(SIM_SRC)/AssertP.vhd
+	ghdl -a --std=$(VHD_STD) StringT.vhd
 	ghdl -e --std=$(VHD_STD) StringT
 	ghdl -r --std=$(VHD_STD) StringT
 

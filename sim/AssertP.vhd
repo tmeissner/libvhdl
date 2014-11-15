@@ -8,6 +8,9 @@ use work.StringP.all;
 package AssertP is
 
 
+  procedure assert_true    (a : boolean);
+  procedure assert_false   (a : boolean);
+
   procedure assert_equal   (a : in integer; b : in integer);
   procedure assert_equal   (a : in std_logic_vector; b : in std_logic_vector);
   procedure assert_equal   (a : in string; b : in string);
@@ -22,6 +25,20 @@ end package AssertP;
 
 package body AssertP is
 
+
+  procedure assert_true (a : boolean) is
+  begin
+    assert a
+      report "FAILURE: a should be evaluate to true"
+      severity failure;
+  end procedure assert_true;
+
+  procedure assert_false (a : boolean) is
+  begin
+    assert not(a)
+      report "FAILURE: a should be evaluate to false"
+      severity failure;
+  end procedure assert_false;
 
   procedure assert_equal (a : in integer; b : in integer) is
   begin

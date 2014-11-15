@@ -6,8 +6,7 @@ library ieee;
 package QueueP is
 
 
-  -- simple queue protected type
-  -- inspired by noasic article http://noasic.com/blog/a-simple-fifo-using-vhdl-protected-types/
+  -- simple queue interface
   type t_simple_queue is protected
 
     procedure push (data : in  std_logic_vector);
@@ -20,7 +19,7 @@ package QueueP is
   end protected t_simple_queue;
 
 
-  -- linked list queue
+  -- linked list queue interface
   type t_list_queue is protected
 
     procedure push (data : in  std_logic_vector);
@@ -40,6 +39,8 @@ end package QueueP;
 package body QueueP is
 
 
+  -- simple queue implementation
+  -- inspired by noasic article http://noasic.com/blog/a-simple-fifo-using-vhdl-protected-types/
   type t_simple_queue is protected body
 
     constant C_QUEUE_DEPTH : natural := 64;
@@ -101,6 +102,7 @@ package body QueueP is
   end protected body t_simple_queue;
 
 
+  -- linked liste queue implementation
   type t_list_queue is protected body
 
     constant C_QUEUE_DEPTH : natural := 64;
@@ -119,7 +121,8 @@ package body QueueP is
     variable v_tail : t_entry_ptr;
     variable v_count : natural range 0 to C_QUEUE_DEPTH := 0;
 
-    -- write one entry into queue
+    -- write one entry into queue by
+    -- creating new entry at head of list
     procedure push (data : in  std_logic_vector) is
     begin
       assert not(is_full)
@@ -135,7 +138,8 @@ package body QueueP is
       v_count := v_count + 1;
     end procedure push;
 
-    -- read one entry from queue
+    -- read one entry from queue at tail of list and
+    -- delete that entry from list after read
     procedure pop  (data : out std_logic_vector) is
       variable v_entry : t_entry_ptr;
     begin

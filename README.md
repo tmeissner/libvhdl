@@ -38,17 +38,27 @@ Package with various implementations of queue types:
 * `t_list_queue` linked list FIFO queue using access types
 
 
+## syn
+Synthesizable components for implementing in FPGA
+
+##### SpiSlaveE
+Configurable SPI slave with support modes 0-3 and simple VAI local backend
+
+
 ##test
 Unit tests for each component
 
 ##### QueueT
-Units tests for components of QueueP package
+Unit tests for components of QueueP package
 
 ##### SimT
-Units tests for components of SimP package
+Unit tests for components of SimP package
+
+##### SpiT
+Unit tests for SpiSlave component
 
 ##### StringT
-Units tests for components of SimP package
+Unit tests for components of SimP package
 
 
 ## Dependencies

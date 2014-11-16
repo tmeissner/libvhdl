@@ -1,8 +1,9 @@
 SIM_SRC = ../sim
+SYN_SRC = ../syn
 VHD_STD = 02
 
 .PHONY: sim
-sim: queuet stringt simt
+sim: queuet stringt simt spit
 
 queuet : QueueT.vhd $(SIM_SRC)/QueueP.vhd $(SIM_SRC)/StringP.vhd $(SIM_SRC)/AssertP.vhd
 	ghdl -a --std=$(VHD_STD) --work=libvhdl $(SIM_SRC)/StringP.vhd $(SIM_SRC)/AssertP.vhd $(SIM_SRC)/QueueP.vhd
@@ -22,10 +23,19 @@ simt : SimT.vhd $(SIM_SRC)/StringP.vhd $(SIM_SRC)/AssertP.vhd $(SIM_SRC)/SimP.vh
 	ghdl -e --std=$(VHD_STD) SimT
 	ghdl -r --std=$(VHD_STD) SimT
 
+spit : SpiT.vhd $(SIM_SRC)/StringP.vhd $(SIM_SRC)/AssertP.vhd $(SIM_SRC)/SimP.vhd $(SYN_SRC)/SpiSlaveE.vhd
+	ghdl -a --std=$(VHD_STD) --work=libvhdl $(SIM_SRC)/StringP.vhd $(SIM_SRC)/AssertP.vhd $(SIM_SRC)/SimP.vhd
+	ghdl -a --std=$(VHD_STD) -fpsl $(SYN_SRC)/SpiSlaveE.vhd
+	ghdl -a --std=$(VHD_STD) -fpsl SpiT.vhd
+	ghdl -e --std=$(VHD_STD) SpiT
+	ghdl -r --std=$(VHD_STD) SpiT --wave=spit.ghw
+
 .PHONY: clean
 clean:
 	rm -f *.o
 	rm -f *.cf
+	rm -f *.ghw
 	rm -f queuet
 	rm -f stringt
 	rm -f simt
+	rm -f spit

@@ -6,19 +6,24 @@ A LGPLv3 licensed library of reusable components for VHDL designs and testbenche
 (Non) synthesible components for testbenches
 
 ##### AssertP
-Package with various assertion procedures
+Package with various assertion procedures.
 
-* `assert_true(x[, str])` checks if boolean x = false, prints string str to console str when given
-* `assert_false(x[, str])` checks if boolean x = false, prints string str to console str when given
-* `assert_equal(x, y[, str])` checks if x = y, prints string str to console str when given
-* `assert_unequal(x, y[, str])` checks if x /= y, prints string str to console str when given
+* `assert_true(x[, str, level])` checks if boolean x = false
+* `assert_false(x[, str, level])` checks if boolean x = false
+* `assert_equal(x, y[, str, level])` checks if x = y
+* `assert_unequal(x, y[, str, level])` checks if x /= y
+
+All of the assert_* procedures have following optional parameters:
+
+* `str` print string str to console instead implemented one
+* `level` severity level (note, warning, error, failure)
 
 ##### SimP
 Package with various components general useful for simulation
 
 * `wait_cycles(x, n)` waits for n rising edges on std_logic signal x
-* `spi_master()` configurable master for SPI protocol
-* `spi_slave()` configurable slave for SPI protocol
+* `spi_master()` configurable master for SPI protocol, supports all cpol/cpha modes
+* `spi_slave()` configurable slave for SPI protocol, supports all cpol/cpha modes
 
 ##### StringP
 Package with various functions to convert to string

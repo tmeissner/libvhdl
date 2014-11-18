@@ -45,8 +45,8 @@ Synthesizable components for implementing in FPGA
 Configurable SPI slave with support modes 0-3 and simple VAI local backend.
 Implementation results:
 
-* 49 logic elements utilization, 397 MHz clock frequency on Microsemi SmartFusion2, speed grade STD
-* 24 slices utilization, 649 MHz clock frequency on Xilinx Kintex7, speed grade -3
+* Microsemi SmartFusion2 (speed grade std): 49 logic elements, 397 MHz on
+* Xilinx Kintex7 (speed grade -3): 24 slices, 649 MHz on
 
 
 ##test

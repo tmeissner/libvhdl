@@ -134,7 +134,7 @@ begin
 
         when TRANSFER =>
           if s_read_edge then
-            s_recv_register(v_bit_counter) <= SpiMosi_i;
+            s_recv_register(v_bit_counter) <= a_mosi;
             if (v_bit_counter = 0) then
               s_spi_state <= STORE;
             else

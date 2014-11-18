@@ -75,7 +75,11 @@ begin
   SpiSyncP : process (Reset_n_i, Clk_i) is
   begin
     if (Reset_n_i = '0') then
-      s_sclk_d <= (others => std_logic'val(G_SPI_CPOL+2));
+      if (G_SPI_CPOL = '0') then
+        s_sclk_d <= (others => '0');
+      else
+        s_sclk_d <= (others => '1');
+      end if;
       s_ste_d  <= (others => '1');
       s_mosi_d <= (others => '0');
     elsif rising_edge(Clk_i) then

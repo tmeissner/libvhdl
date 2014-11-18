@@ -42,7 +42,11 @@ Package with various implementations of queue types:
 Synthesizable components for implementing in FPGA
 
 ##### SpiSlaveE
-Configurable SPI slave with support modes 0-3 and simple VAI local backend
+Configurable SPI slave with support modes 0-3 and simple VAI local backend.
+Implementation results:
+
+* 49 logic elements utilization, 397 MHz clock frequency on Microsemi SmartFusion2, speed grade STD
+* 24 slices utilization, 649 MHz clock frequency on Xilinx Kintex7, speed grade -3
 
 
 ##test

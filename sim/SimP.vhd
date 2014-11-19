@@ -60,28 +60,28 @@ package body SimP is
     if (cpha = 0) then
       for i in data_in'range loop
         mosi <= data_in(i);
-        wait for period;
+        wait for period/2;
         sclk <= not(sclk);
         data_out(i) := miso;
-        wait for period;
+        wait for period/2;
         sclk <= not(sclk);
       end loop;
-      wait for period;
+      wait for period/2;
     else
       mosi <= '1';
-      wait for period;
+      wait for period/2;
       for i in data_in'range loop
         sclk <= not(sclk);
         mosi <= data_in(i);
-        wait for period;
+        wait for period/2;
         sclk <= not(sclk);
         data_out(i) := miso;
-        wait for period;
+        wait for period/2;
       end loop;
     end if;
     ste  <= '1';
     mosi <= '1';
-    wait for period;
+    wait for period/2;
   end procedure spi_master;
 
 

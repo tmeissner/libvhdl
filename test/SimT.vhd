@@ -2,8 +2,13 @@ library ieee;
   use ieee.std_logic_1164.all;
   use ieee.numeric_std.all;
 
+--+ including vhdl 2008 libraries
+library ieee_proposed;
+  use ieee_proposed.standard_additions.all;
+  use ieee_proposed.std_logic_1164_additions.all;
+  use ieee_proposed.numeric_std_additions.all;
+
 library libvhdl;
-  use libvhdl.StringP.all;
   use libvhdl.AssertP.all;
   use libvhdl.SimP.all;
 

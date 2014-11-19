@@ -1,5 +1,5 @@
 library ieee;
-    use ieee.std_logic_1164.all;
+  use ieee.std_logic_1164.all;
 
 
 
@@ -75,7 +75,7 @@ begin
   SpiSyncP : process (Reset_n_i, Clk_i) is
   begin
     if (Reset_n_i = '0') then
-      if (G_SPI_CPOL = '0') then
+      if (G_SPI_CPOL = 0) then
         s_sclk_d <= (others => '0');
       else
         s_sclk_d <= (others => '1');

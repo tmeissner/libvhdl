@@ -24,7 +24,7 @@ architecture sim of SimT is
 
   constant C_PERIOD : time := 5 ns;
 
-  signal s_done : boolean := false;
+  signal s_tests_done : boolean_vector(0 to 1) := (others => false);
 
   signal s_clk  : std_logic := '0';
 
@@ -37,7 +37,7 @@ architecture sim of SimT is
 begin
 
 
-  s_clk <= not(s_clk) after C_PERIOD when not(s_done) else '0';
+  s_clk <= not(s_clk) after C_PERIOD when not(and_reduce(s_tests_done)) else '0';
 
 
   SimTestP : process is
@@ -48,7 +48,7 @@ begin
     wait_cycles(s_clk, 10);
     assert (now - v_time) = C_PERIOD * 20
       severity failure;
-    s_done <= true;
+    s_tests_done(0) <= true;
     wait;
   end process SimTestP;
 
@@ -96,8 +96,9 @@ begin
         assert_equal(v_master_data, std_logic_vector(to_unsigned(i, 8)));
       end loop;
     end loop;
-    wait;
     report "INFO: SimP tests finished successfully";
+    s_tests_done(1) <= true;
+    wait;
   end process SpiSlaveP;
 
 

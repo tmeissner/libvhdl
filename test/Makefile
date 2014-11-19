@@ -3,7 +3,11 @@ SYN_SRC = ../syn
 VHD_STD = 02
 
 .PHONY: sim
-sim: queuet stringt simt spit
+sim: vhdl2008 queuet simt spit
+
+.PHONY: vhdl2008
+vhdl2008 : env_c.vhd numeric_std_additions.vhd numeric_std_unsigned_c.vhd standard_additions_c.vhd standard_textio_additions_c.vhd std_logic_1164_additions.vhd
+	ghdl -a --std=$(VHD_STD) --work=ieee_proposed standard_additions_c.vhd standard_textio_additions_c.vhd std_logic_1164_additions.vhd numeric_std_additions.vhd numeric_std_unsigned_c.vhd env_c.vhd
 
 queuet : QueueT.vhd $(SIM_SRC)/QueueP.vhd $(SIM_SRC)/StringP.vhd $(SIM_SRC)/AssertP.vhd
 	ghdl -a --std=$(VHD_STD) --work=libvhdl $(SIM_SRC)/StringP.vhd $(SIM_SRC)/AssertP.vhd $(SIM_SRC)/QueueP.vhd
@@ -11,13 +15,7 @@ queuet : QueueT.vhd $(SIM_SRC)/QueueP.vhd $(SIM_SRC)/StringP.vhd $(SIM_SRC)/Asse
 	ghdl -e --std=$(VHD_STD) QueueT
 	ghdl -r --std=$(VHD_STD) QueueT
 
-stringt : StringT.vhd $(SIM_SRC)/StringP.vhd $(SIM_SRC)/AssertP.vhd
-	ghdl -a --std=$(VHD_STD) --work=libvhdl $(SIM_SRC)/StringP.vhd $(SIM_SRC)/AssertP.vhd
-	ghdl -a --std=$(VHD_STD) StringT.vhd
-	ghdl -e --std=$(VHD_STD) StringT
-	ghdl -r --std=$(VHD_STD) StringT
-
-simt : SimT.vhd $(SIM_SRC)/StringP.vhd $(SIM_SRC)/AssertP.vhd $(SIM_SRC)/SimP.vhd
+simt : vhdl2008 SimT.vhd $(SIM_SRC)/StringP.vhd $(SIM_SRC)/AssertP.vhd $(SIM_SRC)/SimP.vhd
 	ghdl -a --std=$(VHD_STD) --work=libvhdl $(SIM_SRC)/StringP.vhd $(SIM_SRC)/AssertP.vhd $(SIM_SRC)/SimP.vhd
 	ghdl -a --std=$(VHD_STD) SimT.vhd
 	ghdl -e --std=$(VHD_STD) SimT

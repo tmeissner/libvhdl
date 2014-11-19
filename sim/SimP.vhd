@@ -1,8 +1,16 @@
 library ieee;
   use ieee.std_logic_1164.all;
 
+--+ including vhdl 2008 libraries
+--+ These lines can be commented out when using
+--+ a simulator with built-in VHDL 2008 support
+library ieee_proposed;
+  use ieee_proposed.standard_additions.all;
+  use ieee_proposed.std_logic_1164_additions.all;
+
 library libvhdl;
   use libvhdl.AssertP.all;
+
 
 
 

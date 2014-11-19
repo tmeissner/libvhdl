@@ -1,8 +1,12 @@
 library ieee;
   use ieee.std_logic_1164.all;
 
-library libvhdl;
-  use libvhdl.StringP.all;
+--+ including vhdl 2008 libraries
+--+ These lines can be commented out when using
+--+ a simulator with built-in VHDL 2008 support
+library ieee_proposed;
+  use ieee_proposed.standard_additions.all;
+  use ieee_proposed.std_logic_1164_additions.all;
 
 
 
@@ -77,7 +81,7 @@ package body AssertP is
   begin
     if (str'length = 0) then
       assert a = b
-        report integer'image(a) & " should be equal to " & integer'image(b)
+        report to_string(a) & " should be equal to " & integer'image(b)
         severity level;
     else
       assert a = b
@@ -125,7 +129,7 @@ package body AssertP is
   begin
     if (str'length = 0) then
       assert a /= b
-        report integer'image(a) & " should not be equal to " & integer'image(b)
+        report to_string(a) & " should not be equal to " & integer'image(b)
         severity level;
     else
       assert a /= b

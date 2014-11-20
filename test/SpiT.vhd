@@ -33,7 +33,7 @@ architecture sim of SpiT is
       G_DATA_WIDTH   : positive := 8;
       G_SPI_CPOL     : natural range 0 to 1 := 0;
       G_SPI_CPHA     : natural range 0 to 1 := 0;
-      G_SCLK_DIVIDER : positive := 10
+      G_SCLK_DIVIDER : positive range 6 to positive'high := 10
     );
     port (
       --+ system if
@@ -107,199 +107,246 @@ begin
   s_reset_n <= '1' after 100 ns;
 
 
-    --+ spi ste demultiplexing
-    SpiMastersG : for mode in t_spi_mode'low to t_spi_mode'high generate
+  --+ SpiMasterE tests for all 4 modes
+  SpiMastersG : for mode in t_spi_mode'low to t_spi_mode'high generate
 
 
-      signal s_sclk : std_logic;
-      signal s_ste  : std_logic;
-      signal s_mosi : std_logic;
-      signal s_miso : std_logic;
+    signal s_sclk : std_logic;
+    signal s_ste  : std_logic;
+    signal s_mosi : std_logic;
+    signal s_miso : std_logic;
 
-      signal s_din         : std_logic_vector(C_DATA_WIDTH-1 downto 0);
-      signal s_din_valid   : std_logic;
-      signal s_din_accept  : std_logic;
-      signal s_dout        : std_logic_vector(C_DATA_WIDTH-1 downto 0);
-      signal s_dout_valid  : std_logic;
-      signal s_dout_accept : std_logic;
+    signal s_din         : std_logic_vector(C_DATA_WIDTH-1 downto 0);
+    signal s_din_valid   : std_logic;
+    signal s_din_accept  : std_logic;
+    signal s_dout        : std_logic_vector(C_DATA_WIDTH-1 downto 0);
+    signal s_dout_valid  : std_logic;
+    signal s_dout_accept : std_logic;
 
-      shared variable sv_mosi_queue : t_list_queue;
-      shared variable sv_miso_queue : t_list_queue;
+    shared variable sv_mosi_queue : t_list_queue;
+    shared variable sv_miso_queue : t_list_queue;
 
 
+  begin
+
+
+    SpiMasterStimP : process is
+      variable v_random : RandomPType;
     begin
+      v_random.InitSeed(v_random'instance_name);
+      s_din_valid <= '0';
+      s_din       <= (others => '0');
+      wait until s_reset_n = '1';
+      for i in 0 to integer'(2**C_DATA_WIDTH-1) loop
+        s_din <= v_random.RandSlv(C_DATA_WIDTH);
+        s_din_valid <= '1';
+        wait until rising_edge(s_clk) and s_din_accept = '1';
+        s_din_valid <= '0';
+        sv_mosi_queue.push(s_din);
+        wait until rising_edge(s_clk);
+      end loop;
+      wait;
+    end process SpiMasterStimP;
 
 
-      SpiMasterStimP : process is
-        variable v_random : RandomPType;
-      begin
-        v_random.InitSeed(v_random'instance_name);
-        wait until s_reset_n = '1';
-        for i in 0 to integer'(2**C_DATA_WIDTH-1) loop
-          s_din <= v_random.RandSlv(C_DATA_WIDTH);
-          s_din_valid <= '1';
-          wait until rising_edge(s_clk) and s_din_accept = '1';
-          s_din_valid <= '0';
-          sv_mosi_queue.push(s_din);
-          wait until rising_edge(s_clk);
-        end loop;
-        wait;
-      end process SpiMasterStimP;
+    i_SpiMasterE : SpiMasterE
+    generic map (
+      G_DATA_WIDTH   => C_DATA_WIDTH,
+      G_SPI_CPOL     => mode / 2,
+      G_SPI_CPHA     => mode mod 2,
+      G_SCLK_DIVIDER => 10
+    )
+    port map (
+      --+ system if
+      Reset_n_i    => s_reset_n,
+      Clk_i        => s_clk,
+      --+ SPI slave if
+      SpiSclk_o    => s_sclk,
+      SpiSte_o     => s_ste,
+      SpiMosi_o    => s_mosi,
+      SpiMiso_i    => s_miso,
+      --+ local VAI if
+      Data_i       => s_din,
+      DataValid_i  => s_din_valid,
+      DataAccept_o => s_din_accept,
+      Data_o       => s_dout,
+      DataValid_o  => s_dout_valid,
+      DataAccept_i => s_dout_accept
+    );
 
 
-      i_SpiMasterE : SpiMasterE
-      generic map (
-        G_DATA_WIDTH   => 8,
-        G_SPI_CPOL     => mode / 2,
-        G_SPI_CPHA     => mode mod 2,
-        G_SCLK_DIVIDER => 10
-      )
-      port map (
-        --+ system if
-        Reset_n_i    => s_reset_n,
-        Clk_i        => s_clk,
-        --+ SPI slave if
-        SpiSclk_o    => s_sclk,
-        SpiSte_o     => s_ste,
-        SpiMosi_o    => s_mosi,
-        SpiMiso_i    => s_miso,
-        --+ local VAI if
-        Data_i       => s_din,
-        DataValid_i  => s_din_valid,
-        DataAccept_o => s_din_accept,
-        Data_o       => s_dout,
-        DataValid_o  => s_dout_valid,
-        DataAccept_i => s_dout_accept
-      );
-
-
-      SpiMasterCheckP : process is
-        variable v_queue_data : std_logic_vector(C_DATA_WIDTH-1 downto 0) := (others => '0');
-      begin
-        wait until s_reset_n = '1';
-        for i in 0 to integer'(2**C_DATA_WIDTH-1) loop
-          wait until rising_edge(s_clk) and s_dout_valid = '1';
-          s_dout_accept <= '1';
-          sv_miso_queue.pop(v_queue_data);
-          assert_equal(s_dout, v_queue_data);
-          wait until rising_edge(s_clk);
-          s_dout_accept <= '0';
-        end loop;
-        report "INFO: SpiMaster (mode=" & to_string(mode) & ") test successfully";
-        s_test_done(mode) <= true;
-        wait;
-      end process SpiMasterCheckP;
-
-
-      -- Unit test of spi slave procedure, checks all combinations
-      -- of cpol & cpha against spi master procedure
-      SpiSlaveP : process is
-        variable v_send_data    : std_logic_vector(C_DATA_WIDTH-1 downto 0) := (others => '0');
-        variable v_receive_data : std_logic_vector(C_DATA_WIDTH-1 downto 0) := (others => '0');
-        variable v_queue_data   : std_logic_vector(C_DATA_WIDTH-1 downto 0) := (others => '0');
-        variable v_random       : RandomPType;
-      begin
-        v_random.InitSeed(v_random'instance_name);
-        wait until s_reset_n = '1';
-        for i in 0 to integer'(2**C_DATA_WIDTH-1) loop
-          v_send_data := v_random.RandSlv(C_DATA_WIDTH);
-          sv_miso_queue.push(v_send_data);
-          spi_slave (data_in  => v_send_data,
-                     data_out => v_receive_data,
-                     sclk     => s_sclk,
-                     ste      => s_ste,
-                     mosi     => s_mosi,
-                     miso     => s_miso,
-                     cpol     => mode / 2,
-                     cpha     => mode mod 2
-          );
-          sv_mosi_queue.pop(v_queue_data);
-          assert_equal(v_receive_data, v_queue_data);
-        end loop;
-        wait;
-      end process SpiSlaveP;
-
-
-    end generate SpiMastersG;
-
-
-
-
-    --+ spi ste demultiplexing
-    SpiSlavesG : for mode in t_spi_mode'low to t_spi_mode'high generate
-
-
-      signal s_sclk : std_logic;
-      signal s_ste  : std_logic;
-      signal s_mosi : std_logic;
-      signal s_miso : std_logic;
-
-      signal s_din          : std_logic_vector(C_DATA_WIDTH-1 downto 0);
-      signal s_dout         : std_logic_vector(C_DATA_WIDTH-1 downto 0);
-      signal s_dout_valid   : std_logic;
-      signal s_dout_accept  : std_logic;
-
-
+    SpiMasterCheckP : process is
+      variable v_queue_data : std_logic_vector(C_DATA_WIDTH-1 downto 0) := (others => '0');
     begin
+      s_dout_accept <= '0';
+      wait until s_reset_n = '1';
+      for i in 0 to integer'(2**C_DATA_WIDTH-1) loop
+        wait until rising_edge(s_clk) and s_dout_valid = '1';
+        s_dout_accept <= '1';
+        sv_miso_queue.pop(v_queue_data);
+        assert_equal(s_dout, v_queue_data);
+        wait until rising_edge(s_clk);
+        s_dout_accept <= '0';
+      end loop;
+      report "INFO: SpiMaster (mode=" & to_string(mode) & ") test successfully";
+      s_test_done(mode) <= true;
+      wait;
+    end process SpiMasterCheckP;
 
 
-      -- Unit test of spi master procedure, checks all combinations
-      -- of cpol & cpha against spi slave procedure
-      SpiMasterP : process is
-        variable v_slave_data : std_logic_vector(C_DATA_WIDTH-1 downto 0) := (others => '0');
-      begin
-        s_sclk     <= '1';
-        s_ste      <= '1';
-        s_mosi     <= '1';
-        wait until s_reset_n = '1';
-        for i in 0 to integer'(2**C_DATA_WIDTH-1) loop
-          spi_master (data_in  => std_logic_vector(to_unsigned(i, C_DATA_WIDTH)),
-                      data_out => v_slave_data,
-                      sclk     => s_sclk,
-                      ste      => s_ste,
-                      mosi     => s_mosi,
-                      miso     => s_miso,
-                      cpol     => mode / 2,
-                      cpha     => mode mod 2,
-                      period   => 100 ns
-          );
-          assert_equal(v_slave_data, std_logic_vector(to_unsigned(i, C_DATA_WIDTH)));
-        end loop;
-        report "INFO: SpiSlave (mode=" & to_string(mode) & ") test successfully";
-        s_test_done(mode+4) <= true;
-        wait;
-      end process SpiMasterP;
+    -- Unit test of spi slave procedure, checks all combinations
+    -- of cpol & cpha against spi master procedure
+    SpiSlaveP : process is
+      variable v_send_data    : std_logic_vector(C_DATA_WIDTH-1 downto 0) := (others => '0');
+      variable v_receive_data : std_logic_vector(C_DATA_WIDTH-1 downto 0) := (others => '0');
+      variable v_queue_data   : std_logic_vector(C_DATA_WIDTH-1 downto 0) := (others => '0');
+      variable v_random       : RandomPType;
+    begin
+      v_random.InitSeed(v_random'instance_name);
+      wait until s_reset_n = '1';
+      for i in 0 to integer'(2**C_DATA_WIDTH-1) loop
+        v_send_data := v_random.RandSlv(C_DATA_WIDTH);
+        sv_miso_queue.push(v_send_data);
+        spi_slave (data_in  => v_send_data,
+                   data_out => v_receive_data,
+                   sclk     => s_sclk,
+                   ste      => s_ste,
+                   mosi     => s_mosi,
+                   miso     => s_miso,
+                   cpol     => mode / 2,
+                   cpha     => mode mod 2
+        );
+        sv_mosi_queue.pop(v_queue_data);
+        assert_equal(v_receive_data, v_queue_data);
+      end loop;
+      wait;
+    end process SpiSlaveP;
 
 
-      s_din <= std_logic_vector(unsigned(s_dout) + 1);
+  end generate SpiMastersG;
 
 
-      i_SpiSlaveE : SpiSlaveE
-      generic map (
-        G_DATA_WIDTH => 8,
-        G_SPI_CPOL   => mode / 2,
-        G_SPI_CPHA   => mode mod 2
-      )
-      port map (
-        --+ system if
-        Reset_n_i    => s_reset_n,
-        Clk_i        => s_clk,
-        --+ SPI slave if
-        SpiSclk_i    => s_sclk,
-        SpiSte_i     => s_ste,
-        SpiMosi_i    => s_mosi,
-        SpiMiso_o    => s_miso,
-        --+ local VAI if
-        Data_i       => s_din,
-        DataValid_i  => s_dout_valid,
-        DataAccept_o => s_dout_accept,
-        Data_o       => s_dout,
-        DataValid_o  => s_dout_valid,
-        DataAccept_i => s_dout_accept
-      );
+
+  --+ SpiSlaveE tests for all 4 modes
+  SpiSlavesG : for mode in t_spi_mode'low to t_spi_mode'high generate
 
 
-    end generate SpiSlavesG;
+    signal s_sclk : std_logic;
+    signal s_ste  : std_logic;
+    signal s_mosi : std_logic;
+    signal s_miso : std_logic;
+
+    signal s_din         : std_logic_vector(C_DATA_WIDTH-1 downto 0);
+    signal s_din_valid   : std_logic;
+    signal s_din_accept  : std_logic;
+    signal s_dout        : std_logic_vector(C_DATA_WIDTH-1 downto 0);
+    signal s_dout_valid  : std_logic;
+    signal s_dout_accept : std_logic;
+
+    shared variable sv_mosi_queue : t_list_queue;
+    shared variable sv_miso_queue : t_list_queue;
+
+
+  begin
+
+
+    --* Unit test of spi master procedure, checks all combinations
+    --* of cpol & cpha against spi slave procedure
+    SpiMasterP : process is
+      variable v_send_data    : std_logic_vector(C_DATA_WIDTH-1 downto 0) := (others => '0');
+      variable v_receive_data : std_logic_vector(C_DATA_WIDTH-1 downto 0) := (others => '0');
+      variable v_queue_data   : std_logic_vector(C_DATA_WIDTH-1 downto 0) := (others => '0');
+      variable v_random       : RandomPType;
+    begin
+      v_random.InitSeed(v_random'instance_name);
+      s_sclk     <= '1';
+      s_ste      <= '1';
+      s_mosi     <= '1';
+      wait until s_reset_n = '1';
+      for i in 0 to integer'(2**C_DATA_WIDTH-1) loop
+        v_send_data := v_random.RandSlv(C_DATA_WIDTH);
+        sv_mosi_queue.push(v_send_data);
+        spi_master (data_in  => v_send_data,
+                    data_out => v_receive_data,
+                    sclk     => s_sclk,
+                    ste      => s_ste,
+                    mosi     => s_mosi,
+                    miso     => s_miso,
+                    cpol     => mode / 2,
+                    cpha     => mode mod 2,
+                    period   => 100 ns
+        );
+        sv_miso_queue.pop(v_queue_data);
+        assert_equal(v_receive_data, v_queue_data);
+      end loop;
+      report "INFO: SpiSlave (mode=" & to_string(mode) & ") test successfully";
+      s_test_done(mode+4) <= true;
+      wait;
+    end process SpiMasterP;
+
+
+    SpiSlaveStimP : process is
+      variable v_random : RandomPType;
+    begin
+      v_random.InitSeed(v_random'instance_name);
+      s_din_valid <= '0';
+      s_din       <= (others => '0');
+      wait until s_reset_n = '1';
+      for i in 0 to integer'(2**C_DATA_WIDTH-1) loop
+        s_din <= v_random.RandSlv(C_DATA_WIDTH);
+        s_din_valid <= '1';
+        wait until rising_edge(s_clk) and s_din_accept = '1';
+        s_din_valid <= '0';
+        sv_miso_queue.push(s_din);
+        wait until rising_edge(s_clk) and s_dout_valid = '1';
+      end loop;
+      wait;
+    end process SpiSlaveStimP;
+
+
+    i_SpiSlaveE : SpiSlaveE
+    generic map (
+      G_DATA_WIDTH => C_DATA_WIDTH,
+      G_SPI_CPOL   => mode / 2,
+      G_SPI_CPHA   => mode mod 2
+    )
+    port map (
+      --+ system if
+      Reset_n_i    => s_reset_n,
+      Clk_i        => s_clk,
+      --+ SPI slave if
+      SpiSclk_i    => s_sclk,
+      SpiSte_i     => s_ste,
+      SpiMosi_i    => s_mosi,
+      SpiMiso_o    => s_miso,
+      --+ local VAI if
+      Data_i       => s_din,
+      DataValid_i  => s_din_valid,
+      DataAccept_o => s_din_accept,
+      Data_o       => s_dout,
+      DataValid_o  => s_dout_valid,
+      DataAccept_i => s_dout_accept
+    );
+
+
+    SpiSlaveCheckP : process is
+      variable v_queue_data : std_logic_vector(C_DATA_WIDTH-1 downto 0) := (others => '0');
+    begin
+      s_dout_accept <= '0';
+      wait until s_reset_n = '1';
+      for i in 0 to integer'(2**C_DATA_WIDTH-1) loop
+        wait until rising_edge(s_clk) and s_dout_valid = '1';
+        s_dout_accept <= '1';
+        sv_mosi_queue.pop(v_queue_data);
+        assert_equal(s_dout, v_queue_data);
+        wait until rising_edge(s_clk);
+        s_dout_accept <= '0';
+      end loop;
+      wait;
+    end process SpiSlaveCheckP;
+
+
+  end generate SpiSlavesG;
 
 
 

@@ -5,10 +5,10 @@ library ieee;
 
 entity SpiMasterE is
   generic (
-    G_DATA_WIDTH   : positive := 8;              --* data bus width
-    G_SPI_CPOL     : natural range 0 to 1 := 0;  --* SPI clock polarity
-    G_SPI_CPHA     : natural range 0 to 1 := 0;  --* SPI clock phase
-    G_SCLK_DIVIDER : positive := 10              --* SCLK divider related to system clock
+    G_DATA_WIDTH   : positive := 8;                           --* data bus width
+    G_SPI_CPOL     : natural range 0 to 1 := 0;               --* SPI clock polarity
+    G_SPI_CPHA     : natural range 0 to 1 := 0;               --* SPI clock phase
+    G_SCLK_DIVIDER : positive range 6 to positive'high := 10  --* SCLK divider related to system clock
   );
   port (
     --+ system if
@@ -218,7 +218,8 @@ begin
 
 
   assert G_SCLK_DIVIDER rem 2 = 0
-    report "WARNING: " & SpiMasterE'instance_name & LF & "G_SCLK_DIVIDER rounded down to next even value"
+    report "WARNING: " & SpiMasterE'instance_name & LF & "G_SCLK_DIVIDER " & integer'image(G_SCLK_DIVIDER) &
+           " rounded down to next even value " & integer'image(G_SCLK_DIVIDER-1)
     severity warning;
 
 

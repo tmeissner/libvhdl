@@ -1,0 +1,11 @@
+--- env_c.vhdl	2014-11-20 11:18:24.210947993 +0100
++++ env_c.vhdl_patched	2014-11-20 11:18:38.578652227 +0100
+@@ -30,7 +30,7 @@
+       1 ms, 10 ms, 100 ms,
+       1 sec, 10 sec, 100 sec,
+       1 min, 10 min, 100 min,
+-      1 hr, 10 hr, 100 hr
++      1 hr  --, 10 hr, 100 hr (removed for GHDL)
+       ) ;
+ 
+   function RESOLUTION_LIMIT return DELAY_LENGTH is

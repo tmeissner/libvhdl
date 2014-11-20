@@ -45,4 +45,7 @@ clean:
 	rm -f stringt
 	rm -f simt
 	rm -f spit
+
+.PHONY: distclean
+distclean: clean
 	rm -f $(VHD08_SRC)/*.vhdl

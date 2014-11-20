@@ -97,7 +97,7 @@ package body AssertP is
   begin
     if (str'length = 0) then
       assert a = b
-        report "FAILURE: " & to_string(a) & " should be equal to " & to_string(b)
+        report "FAILURE: 0x" & to_hstring(a) & " should be equal to 0x" & to_hstring(b)
         severity level;
     else
       assert a = b
@@ -145,7 +145,7 @@ package body AssertP is
   begin
     if (str'length = 0) then
       assert a /= b
-        report "FAILURE: " & to_string(a) & " should not be equal to " & to_string(b)
+        report "FAILURE: " & to_hstring(a) & " should not be equal to " & to_hstring(b)
         severity level;
     else
       assert a /= b

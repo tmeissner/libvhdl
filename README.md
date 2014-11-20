@@ -60,18 +60,9 @@ Unit tests for SpiSlave component
 To run the tests, you have to install GHDL. You can get it from
 [http://sourceforge.net/projects/ghdl-updates/](http://sourceforge.net/projects/ghdl-updates/).
 
-Furthermore, you need the VHDL 2008 proposed packages because libvhdl uses various VHDL 2008 features.
-You can get the packages from [http://www.eda.org/fphdl/](http://www.eda.org/fphdl/).
-Save the following files into the vhdl_2008/ folder in the test directory:
+Furthermore, you need the VHDL-2008 proposed packages because libvhdl uses various VHDL-2008 features. To get the needed files, you can use the get_vhdl_2008.sh script which downloads the files into the vhdl_2008 folder and patches the env_c.vhdl file to get in compiled with GHDL.
 
-* standard_additions_c.vhd
-* standard_textio_additions_c.vhd
-* std_logic_1164_additions.vhd
-* numeric_std_additions.vhd
-* numeric_std_unsigned_c.vhd
-* env_c.vhd
-
-If you another simulator with full VHDL-08 support, you don't need these packages. Instead you have to outcomment
+If you another simulator with full VHDL-2008 support, you don't need these packages. Instead you have to outcomment
 the references to these packages from the source files.
 
 libvhdl also uses the OSVVM library to generate random data for the unit tests. We use version OSVVM version 2.1

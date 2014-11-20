@@ -3,6 +3,8 @@ library ieee;
   use ieee.numeric_std.all;
 
 --+ including vhdl 2008 libraries
+--+ These lines can be commented out when using
+--+ a simulator with built-in VHDL 2008 support
 library ieee_proposed;
   use ieee_proposed.standard_additions.all;
   use ieee_proposed.std_logic_1164_additions.all;
@@ -49,6 +51,7 @@ begin
     assert (now - v_time) = C_PERIOD * 20
       severity failure;
     s_tests_done(0) <= true;
+    report "INFO: wait_cycles() procedure tests finished successfully";
     wait;
   end process SimTestP;
 
@@ -96,7 +99,7 @@ begin
         assert_equal(v_master_data, std_logic_vector(to_unsigned(i, 8)));
       end loop;
     end loop;
-    report "INFO: SimP tests finished successfully";
+    report "INFO: spi_* procedures tests finished successfully";
     s_tests_done(1) <= true;
     wait;
   end process SpiSlaveP;

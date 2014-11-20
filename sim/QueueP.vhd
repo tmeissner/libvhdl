@@ -1,6 +1,12 @@
 library ieee;
   use ieee.std_logic_1164.all;
 
+--+ including vhdl 2008 libraries
+--+ These lines can be commented out when using
+--+ a simulator with built-in VHDL 2008 support
+library ieee_proposed;
+  use ieee_proposed.standard_additions.all;
+  use ieee_proposed.std_logic_1164_additions.all;
 
 
 package QueueP is
@@ -23,7 +29,8 @@ package QueueP is
   type t_list_queue is protected
 
     procedure push (data : in  std_logic_vector);
-    procedure pop  (data : out std_logic_vector);
+    procedure pop  (data : inout std_logic_vector);
+    procedure logging (logging : in boolean);
     impure function is_empty return boolean;
     impure function is_full  return boolean;
     impure function fillstate return natural;
@@ -106,7 +113,7 @@ package body QueueP is
   type t_list_queue is protected body
 
     constant C_QUEUE_DEPTH : natural := 64;
-    constant C_QUEUE_WIDTH : natural := 64;
+    constant C_QUEUE_WIDTH : natural := 8;
 
     type t_entry;
     type t_entry_ptr is access t_entry;
@@ -120,6 +127,7 @@ package body QueueP is
     variable v_head : t_entry_ptr;
     variable v_tail : t_entry_ptr;
     variable v_count : natural range 0 to C_QUEUE_DEPTH := 0;
+    variable v_logging : boolean := false;
 
     -- write one entry into queue by
     -- creating new entry at head of list
@@ -128,7 +136,7 @@ package body QueueP is
       assert not(is_full)
         report "push into full queue -> discarded"
         severity failure;
-      if(v_head /= null) then
+      if (v_count /= 0) then
         v_head := new t_entry'(data, v_head, null);
         v_head.last_entry.next_entry := v_head;
       else
@@ -136,11 +144,14 @@ package body QueueP is
         v_tail := v_head;
       end if;
       v_count := v_count + 1;
+      if v_logging then
+        report t_list_queue'instance_name & " pushed 0x" & to_hstring(data) & " into queue";
+      end if;
     end procedure push;
 
     -- read one entry from queue at tail of list and
     -- delete that entry from list after read
-    procedure pop  (data : out std_logic_vector) is
+    procedure pop  (data : inout std_logic_vector) is
       variable v_entry : t_entry_ptr;
     begin
       assert not(is_empty)
@@ -151,7 +162,15 @@ package body QueueP is
       v_tail := v_tail.next_entry;
       deallocate(v_entry);
       v_count := v_count - 1;
+      if v_logging then
+        report t_list_queue'instance_name & " popped 0x" & to_hstring(data) & " from queue";
+      end if;
     end procedure pop;
+
+    procedure logging (logging : in boolean) is
+    begin
+      v_logging := logging;
+    end procedure logging;
 
     -- returns true if queue is empty, false otherwise
     impure function is_empty return boolean is

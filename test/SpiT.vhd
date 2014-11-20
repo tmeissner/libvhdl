@@ -2,15 +2,21 @@ library ieee;
   use ieee.std_logic_1164.all;
   use ieee.numeric_std.all;
 
-library libvhdl;
-  use libvhdl.AssertP.all;
-  use libvhdl.SimP.all;
-
 --+ including vhdl 2008 libraries
+--+ These lines can be commented out when using
+--+ a simulator with built-in VHDL 2008 support
 library ieee_proposed;
   use ieee_proposed.standard_additions.all;
   use ieee_proposed.std_logic_1164_additions.all;
   use ieee_proposed.numeric_std_additions.all;
+
+library osvvm;
+  use osvvm.RandomPkg.all;
+
+library libvhdl;
+  use libvhdl.AssertP.all;
+  use libvhdl.SimP.all;
+  use libvhdl.QueueP.all;
 
 
 
@@ -117,18 +123,24 @@ begin
       signal s_dout_valid  : std_logic;
       signal s_dout_accept : std_logic;
 
+      shared variable sv_mosi_queue : t_list_queue;
+      shared variable sv_miso_queue : t_list_queue;
+
 
     begin
 
 
       SpiMasterStimP : process is
+        variable v_random : RandomPType;
       begin
+        v_random.InitSeed(v_random'instance_name);
         wait until s_reset_n = '1';
         for i in 0 to integer'(2**C_DATA_WIDTH-1) loop
-          s_din       <= std_logic_vector(to_unsigned(i, C_DATA_WIDTH));
+          s_din <= v_random.RandSlv(C_DATA_WIDTH);
           s_din_valid <= '1';
           wait until rising_edge(s_clk) and s_din_accept = '1';
           s_din_valid <= '0';
+          sv_mosi_queue.push(s_din);
           wait until rising_edge(s_clk);
         end loop;
         wait;
@@ -162,12 +174,14 @@ begin
 
 
       SpiMasterCheckP : process is
+        variable v_queue_data : std_logic_vector(C_DATA_WIDTH-1 downto 0) := (others => '0');
       begin
         wait until s_reset_n = '1';
         for i in 0 to integer'(2**C_DATA_WIDTH-1) loop
           wait until rising_edge(s_clk) and s_dout_valid = '1';
           s_dout_accept <= '1';
-          assert_equal(s_dout, std_logic_vector(to_unsigned(i, C_DATA_WIDTH)));
+          sv_miso_queue.pop(v_queue_data);
+          assert_equal(s_dout, v_queue_data);
           wait until rising_edge(s_clk);
           s_dout_accept <= '0';
         end loop;
@@ -180,11 +194,18 @@ begin
       -- Unit test of spi slave procedure, checks all combinations
       -- of cpol & cpha against spi master procedure
       SpiSlaveP : process is
-        variable v_master_data : std_logic_vector(7 downto 0) := (others => '0');
+        variable v_send_data    : std_logic_vector(C_DATA_WIDTH-1 downto 0) := (others => '0');
+        variable v_receive_data : std_logic_vector(C_DATA_WIDTH-1 downto 0) := (others => '0');
+        variable v_queue_data   : std_logic_vector(C_DATA_WIDTH-1 downto 0) := (others => '0');
+        variable v_random       : RandomPType;
       begin
+        v_random.InitSeed(v_random'instance_name);
+        wait until s_reset_n = '1';
         for i in 0 to integer'(2**C_DATA_WIDTH-1) loop
-          spi_slave (data_in  => v_master_data,
-                     data_out => v_master_data,
+          v_send_data := v_random.RandSlv(C_DATA_WIDTH);
+          sv_miso_queue.push(v_send_data);
+          spi_slave (data_in  => v_send_data,
+                     data_out => v_receive_data,
                      sclk     => s_sclk,
                      ste      => s_ste,
                      mosi     => s_mosi,
@@ -192,8 +213,8 @@ begin
                      cpol     => mode / 2,
                      cpha     => mode mod 2
           );
-          assert_equal(v_master_data, std_logic_vector(to_unsigned(i, C_DATA_WIDTH)));
-          v_master_data := std_logic_vector(unsigned(v_master_data) + 1);
+          sv_mosi_queue.pop(v_queue_data);
+          assert_equal(v_receive_data, v_queue_data);
         end loop;
         wait;
       end process SpiSlaveP;

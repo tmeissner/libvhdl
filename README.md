@@ -62,7 +62,7 @@ To run the tests, you have to install GHDL. You can get it from
 
 Furthermore, you need the VHDL 2008 proposed packages because libvhdl uses various VHDL 2008 features.
 You can get the packages from [http://www.eda.org/fphdl/](http://www.eda.org/fphdl/).
-Save the following files into the test folder:
+Save the following files into the vhdl_2008/ folder in the test directory:
 
 * standard_additions_c.vhd
 * standard_textio_additions_c.vhd

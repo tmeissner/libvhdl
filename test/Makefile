@@ -1,13 +1,17 @@
 SIM_SRC = ../sim
 SYN_SRC = ../syn
+VHD08_SRC = vhdl_2008
 VHD_STD = 02
 
 .PHONY: sim
 sim: vhdl2008 osvvm queuet simt spit
 
 .PHONY: vhdl2008
-vhdl2008 : env_c.vhd numeric_std_additions.vhd numeric_std_unsigned_c.vhd standard_additions_c.vhd standard_textio_additions_c.vhd std_logic_1164_additions.vhd
-	ghdl -a --std=$(VHD_STD) --work=ieee_proposed standard_additions_c.vhd standard_textio_additions_c.vhd std_logic_1164_additions.vhd numeric_std_additions.vhd numeric_std_unsigned_c.vhd env_c.vhd
+vhdl2008 : $(VHD08_SRC)/env_c.vhd $(VHD08_SRC)/numeric_std_additions.vhd $(VHD08_SRC)/numeric_std_unsigned_c.vhd \
+$(VHD08_SRC)/standard_additions_c.vhd $(VHD08_SRC)/standard_textio_additions_c.vhd $(VHD08_SRC)/std_logic_1164_additions.vhd
+	ghdl -a --std=$(VHD_STD) --work=ieee_proposed $(VHD08_SRC)/standard_additions_c.vhd \
+	$(VHD08_SRC)/standard_textio_additions_c.vhd $(VHD08_SRC)/std_logic_1164_additions.vhd $(VHD08_SRC)/numeric_std_additions.vhd \
+	$(VHD08_SRC)/numeric_std_unsigned_c.vhd $(VHD08_SRC)/env_c.vhd
 
 .PHONY: osvvm
 osvvm : vhdl2008 osvvm_2.1/SortListPkg_int.vhd osvvm_2.1/RandomBasePkg.vhd osvvm_2.1/RandomPkg.vhd

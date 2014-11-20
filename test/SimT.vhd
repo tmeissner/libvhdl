@@ -10,9 +10,14 @@ library ieee_proposed;
   use ieee_proposed.std_logic_1164_additions.all;
   use ieee_proposed.numeric_std_additions.all;
 
+library osvvm;
+  use osvvm.RandomPkg.all;
+
 library libvhdl;
   use libvhdl.AssertP.all;
   use libvhdl.SimP.all;
+  use libvhdl.QueueP.all;
+
 
 
 
@@ -24,7 +29,10 @@ end entity SimT;
 architecture sim of SimT is
 
 
+  --* testbench global clock period
   constant C_PERIOD : time := 5 ns;
+  --* SPI data transfer data width
+  constant C_DATA_WIDTH : natural := 8;
 
   signal s_tests_done : boolean_vector(0 to 1) := (others => false);
 
@@ -34,6 +42,9 @@ architecture sim of SimT is
   signal s_ste  : std_logic;
   signal s_mosi : std_logic;
   signal s_miso : std_logic;
+
+  shared variable sv_mosi_queue : t_list_queue;
+  shared variable sv_miso_queue : t_list_queue;
 
 
 begin
@@ -59,12 +70,18 @@ begin
   -- Unit test of spi master procedure, checks all combinations
   -- of cpol & cpha against spi slave procedure
   SpiMasterP : process is
-    variable v_slave_data : std_logic_vector(7 downto 0);
+    variable v_send_data    : std_logic_vector(C_DATA_WIDTH-1 downto 0) := (others => '0');
+    variable v_receive_data : std_logic_vector(C_DATA_WIDTH-1 downto 0) := (others => '0');
+    variable v_queue_data   : std_logic_vector(C_DATA_WIDTH-1 downto 0) := (others => '0');
+    variable v_random       : RandomPType;
   begin
+    v_random.InitSeed(v_random'instance_name);
     for mode in 0 to 3 loop
       for i in 0 to 255 loop
-        spi_master (data_in  => std_logic_vector(to_unsigned(i, 8)),
-                    data_out => v_slave_data,
+        v_send_data := v_random.RandSlv(C_DATA_WIDTH);
+        sv_mosi_queue.push(v_send_data);
+        spi_master (data_in  => v_send_data,
+                    data_out => v_receive_data,
                     sclk     => s_sclk,
                     ste      => s_ste,
                     mosi     => s_mosi,
@@ -73,7 +90,8 @@ begin
                     cpha     => mode mod 2,
                     period   => 1 us
         );
-        assert_equal(v_slave_data, std_logic_vector(to_unsigned(i, 8)));
+        sv_miso_queue.pop(v_queue_data);
+        assert_equal(v_receive_data, v_queue_data);
       end loop;
     end loop;
     wait;
@@ -83,12 +101,18 @@ begin
   -- Unit test of spi slave procedure, checks all combinations
   -- of cpol & cpha against spi master procedure
   SpiSlaveP : process is
-    variable v_master_data : std_logic_vector(7 downto 0);
+    variable v_send_data    : std_logic_vector(C_DATA_WIDTH-1 downto 0) := (others => '0');
+    variable v_receive_data : std_logic_vector(C_DATA_WIDTH-1 downto 0) := (others => '0');
+    variable v_queue_data   : std_logic_vector(C_DATA_WIDTH-1 downto 0) := (others => '0');
+    variable v_random       : RandomPType;
   begin
+    v_random.InitSeed(v_random'instance_name);
     for mode in 0 to 3 loop
       for i in 0 to 255 loop
-        spi_slave (data_in  => std_logic_vector(to_unsigned(i, 8)),
-                   data_out => v_master_data,
+        v_send_data := v_random.RandSlv(C_DATA_WIDTH);
+        sv_miso_queue.push(v_send_data);
+        spi_slave (data_in  => v_send_data,
+                   data_out => v_receive_data,
                    sclk     => s_sclk,
                    ste      => s_ste,
                    mosi     => s_mosi,
@@ -96,7 +120,8 @@ begin
                    cpol     => mode / 2,
                    cpha     => mode mod 2
         );
-        assert_equal(v_master_data, std_logic_vector(to_unsigned(i, 8)));
+        sv_mosi_queue.pop(v_queue_data);
+        assert_equal(v_receive_data, v_queue_data);
       end loop;
     end loop;
     report "INFO: spi_* procedures tests finished successfully";

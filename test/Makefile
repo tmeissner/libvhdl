@@ -23,10 +23,10 @@ queuet : QueueT.vhd $(SIM_SRC)/QueueP.vhd $(SIM_SRC)/AssertP.vhd
 	ghdl -e --std=$(VHD_STD) QueueT
 	ghdl -r --std=$(VHD_STD) QueueT
 
-simt : vhdl2008 SimT.vhd $(SIM_SRC)/AssertP.vhd $(SIM_SRC)/SimP.vhd
-	ghdl -a --std=$(VHD_STD) --work=libvhdl $(SIM_SRC)/AssertP.vhd $(SIM_SRC)/SimP.vhd
-	ghdl -a --std=$(VHD_STD) SimT.vhd
-	ghdl -e --std=$(VHD_STD) SimT
+simt : vhdl2008 osvvm SimT.vhd $(SIM_SRC)/QueueP.vhd $(SIM_SRC)/AssertP.vhd $(SIM_SRC)/SimP.vhd
+	ghdl -a --std=$(VHD_STD) --work=libvhdl $(SIM_SRC)/QueueP.vhd $(SIM_SRC)/AssertP.vhd $(SIM_SRC)/SimP.vhd
+	ghdl -a --std=$(VHD_STD) --ieee=synopsys SimT.vhd
+	ghdl -e --std=$(VHD_STD) --ieee=synopsys SimT
 	ghdl -r --std=$(VHD_STD) SimT
 
 spit : vhdl2008 osvvm SpiT.vhd $(SIM_SRC)/AssertP.vhd $(SIM_SRC)/SimP.vhd $(SIM_SRC)/QueueP.vhd $(SYN_SRC)/SpiSlaveE.vhd $(SYN_SRC)/SpiMasterE.vhd

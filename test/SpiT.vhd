@@ -31,6 +31,7 @@ architecture sim of SpiT is
   component SpiMasterE is
     generic (
       G_DATA_WIDTH   : positive := 8;
+      G_DATA_DIR     : natural range 0 to 1 := 0;
       G_SPI_CPOL     : natural range 0 to 1 := 0;
       G_SPI_CPHA     : natural range 0 to 1 := 0;
       G_SCLK_DIVIDER : positive range 6 to positive'high := 10
@@ -58,6 +59,7 @@ architecture sim of SpiT is
   component SpiSlaveE is
     generic (
       G_DATA_WIDTH : positive := 8;
+      G_DATA_DIR   : natural range 0 to 1 := 0;
       G_SPI_CPOL   : natural range 0 to 1 := 0;
       G_SPI_CPHA   : natural range 0 to 1 := 0
     );
@@ -130,6 +132,15 @@ begin
   begin
 
 
+    --* Stimuli generator and BFM for the valid-accept interface
+    --* on the local data input of the DUT
+    --*
+    --* Generates random stimuli and serves it to the
+    --* valid-accept interface at the input of the DUT
+    --*
+    --* The stimuli data is also pushed into the mosi queue
+    --* which serves as simple abstract reference model
+    --* of the SPI transmit (master -> slave) channel
     SpiMasterStimP : process is
       variable v_random : RandomPType;
     begin
@@ -149,9 +160,11 @@ begin
     end process SpiMasterStimP;
 
 
+    --* DUT: SpiMasterE component
     i_SpiMasterE : SpiMasterE
     generic map (
       G_DATA_WIDTH   => C_DATA_WIDTH,
+      G_DATA_DIR     => 1,
       G_SPI_CPOL     => mode / 2,
       G_SPI_CPHA     => mode mod 2,
       G_SCLK_DIVIDER => 10
@@ -175,6 +188,13 @@ begin
     );
 
 
+    --* Checker and BFM for the valid-accept interface
+    --* on the local data output of the DUT
+    --*
+    --* Reads the output of the DUT and compares it to
+    --* data popped from the miso queue which serves as
+    --* simple abstract reference model of the SPI receive
+    --* (slave -> master) channel
     SpiMasterCheckP : process is
       variable v_queue_data : std_logic_vector(C_DATA_WIDTH-1 downto 0) := (others => '0');
     begin
@@ -194,8 +214,20 @@ begin
     end process SpiMasterCheckP;
 
 
-    -- Unit test of spi slave procedure, checks all combinations
-    -- of cpol & cpha against spi master procedure
+    --* Stimuli generator and BFM  for the SPI slave
+    --* interface on the SPI miso input of the DUT
+    --*
+    --* Generates random stimuli and serves it to the
+    --* SPI interface at the input of the DUT
+    --*
+    --* The stimuli data is also pushed into the miso queue
+    --* which serves as simple abstract reference model
+    --* of the SPI receive (slave -> master) channel
+    --*
+    --* Furthermore the data received by the SPI slave BFM
+    --* is checked against data popped from the mosi queue
+    --* which serves as simple abstract reference model of
+    --* the SPI receive (master -> slave) channel
     SpiSlaveP : process is
       variable v_send_data    : std_logic_vector(C_DATA_WIDTH-1 downto 0) := (others => '0');
       variable v_receive_data : std_logic_vector(C_DATA_WIDTH-1 downto 0) := (others => '0');
@@ -307,6 +339,7 @@ begin
     i_SpiSlaveE : SpiSlaveE
     generic map (
       G_DATA_WIDTH => C_DATA_WIDTH,
+      G_DATA_DIR   => 1,
       G_SPI_CPOL   => mode / 2,
       G_SPI_CPHA   => mode mod 2
     )

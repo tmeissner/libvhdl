@@ -1,11 +1,13 @@
 library ieee;
   use ieee.std_logic_1164.all;
+  use ieee.numeric_std.all;
 
 
 
 entity SpiSlaveE is
   generic (
     G_DATA_WIDTH : positive := 8;              --* data bus width
+    G_DATA_DIR   : natural range 0 to 1 := 0;  --* start from lsb/msb 0/1
     G_SPI_CPOL   : natural range 0 to 1 := 0;  --* SPI clock polarity
     G_SPI_CPHA   : natural range 0 to 1 := 0   --* SPI clock phase
   );
@@ -55,6 +57,9 @@ architecture rtl of SpiSlaveE is
 
   alias a_ste  : std_logic is s_ste_d(s_ste_d'left);
   alias a_mosi : std_logic is s_mosi_d(s_mosi_d'left);
+
+  constant C_BIT_COUNTER_START : natural := (G_DATA_WIDTH-1) * G_DATA_DIR;
+  constant C_BIT_COUNTER_END   : natural := (G_DATA_WIDTH-1) * to_integer(not(to_unsigned(G_DATA_DIR, 1)));
 
 
 begin
@@ -114,7 +119,7 @@ begin
     if (Reset_n_i = '0') then
       s_miso           <= '0';
       s_recv_register  <= (others => '0');
-      v_bit_counter    := G_DATA_WIDTH-1;
+      v_bit_counter    := C_BIT_COUNTER_START;
       s_transfer_valid <= false;
       s_spi_state      <= IDLE;
     elsif rising_edge(Clk_i) then
@@ -123,7 +128,7 @@ begin
         when IDLE =>
           s_miso           <= '0';
           s_recv_register  <= (others => '0');
-          v_bit_counter    := G_DATA_WIDTH-1;
+          v_bit_counter    := C_BIT_COUNTER_START;
           s_transfer_valid <= false;
           if (a_ste = '0') then
             if (G_SPI_CPHA = 0) then
@@ -135,10 +140,14 @@ begin
         when TRANSFER =>
           if s_read_edge then
             s_recv_register(v_bit_counter) <= a_mosi;
-            if (v_bit_counter = 0) then
+            if (v_bit_counter = C_BIT_COUNTER_END) then
               s_spi_state <= STORE;
             else
-              v_bit_counter := v_bit_counter - 1;
+              if (G_DATA_DIR = 0) then
+                v_bit_counter := v_bit_counter + 1;
+              else
+                v_bit_counter := v_bit_counter - 1;
+              end if;
             end if;
           elsif s_write_edge then
             s_miso <= s_send_register(v_bit_counter);

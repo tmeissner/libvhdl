@@ -1,11 +1,13 @@
 library ieee;
   use ieee.std_logic_1164.all;
+  use ieee.numeric_std.all;
 
 
 
 entity SpiMasterE is
   generic (
     G_DATA_WIDTH   : positive := 8;                           --* data bus width
+    G_DATA_DIR     : natural range 0 to 1 := 0;               --* start from lsb/msb 0/1
     G_SPI_CPOL     : natural range 0 to 1 := 0;               --* SPI clock polarity
     G_SPI_CPHA     : natural range 0 to 1 := 0;               --* SPI clock phase
     G_SCLK_DIVIDER : positive range 6 to positive'high := 10  --* SCLK divider related to system clock
@@ -57,6 +59,9 @@ architecture rtl of SpiMasterE is
 
   alias a_miso : std_logic is s_miso_d(s_miso_d'left);
 
+  constant C_BIT_COUNTER_START : natural := (G_DATA_WIDTH-1) * G_DATA_DIR;
+  constant C_BIT_COUNTER_END   : natural := (G_DATA_WIDTH-1) * to_integer(not(to_unsigned(G_DATA_DIR, 1)));
+
 
 begin
 
@@ -96,7 +101,7 @@ begin
   begin
     if (Reset_n_i = '0') then
       s_recv_register  <= (others => '0');
-      v_bit_counter    := G_DATA_WIDTH-1;
+      v_bit_counter    := C_BIT_COUNTER_START;
       v_sclk_counter   := G_SCLK_DIVIDER-1;
       s_transfer_valid <= false;
       s_ste            <= '1';
@@ -111,7 +116,7 @@ begin
           s_sclk           <= std_logic'val(G_SPI_CPOL+2);
           s_mosi           <= '0';
           s_recv_register  <= (others => '0');
-          v_bit_counter    := G_DATA_WIDTH-1;
+          v_bit_counter    := C_BIT_COUNTER_START;
           v_sclk_counter   := G_SCLK_DIVIDER/2-1;
           s_transfer_valid <= false;
           if(DataValid_i = '1' and s_data_accept = '1') then
@@ -120,7 +125,7 @@ begin
           end if;
 
         when WRITE =>
-          if (G_SPI_CPHA = 0 and v_bit_counter = G_DATA_WIDTH-1) then
+          if (G_SPI_CPHA = 0 and v_bit_counter = C_BIT_COUNTER_START) then
             s_mosi      <= s_send_register(v_bit_counter);
             s_spi_state <= READ;
           else
@@ -139,14 +144,18 @@ begin
             s_sclk                         <= not(s_sclk);
             s_recv_register(v_bit_counter) <= a_miso;
             v_sclk_counter                 := G_SCLK_DIVIDER/2-1;
-            if (v_bit_counter = 0) then
+            if (v_bit_counter = C_BIT_COUNTER_END) then
               if (G_SPI_CPHA = 0) then
                 s_spi_state    <= CYCLE;
               else
                 s_spi_state <= STORE;
               end if;
             else
-              v_bit_counter  := v_bit_counter - 1;
+              if (G_DATA_DIR = 0) then
+                v_bit_counter  := v_bit_counter + 1;
+              else
+                v_bit_counter  := v_bit_counter - 1;
+              end if;
               s_spi_state    <= WRITE;
             end if;
           else

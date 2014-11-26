@@ -19,16 +19,17 @@ package SimP is
 
   procedure wait_cycles (signal clk : in std_logic; n : in natural);
 
-  procedure spi_master (    data_in : in    std_logic_vector; data_out : out std_logic_vector;
-                        signal sclk : inout std_logic;      signal ste : out std_logic;
-                        signal mosi : out   std_logic;     signal miso : in  std_logic;
-                               cpol : in    natural range 0 to 1; cpha : in  natural range 0 to 1;
-                             period : in    time);
+  procedure spi_master (    data_in : in    std_logic_vector;  data_out : out std_logic_vector;
+                        signal sclk : inout std_logic;       signal ste : out std_logic;
+                        signal mosi : out   std_logic;      signal miso : in  std_logic;
+                                dir : in    natural range 0 to 1;  cpol : in  natural range 0 to 1;
+                                cpha : in  natural range 0 to 1; period : in  time);
 
   procedure spi_slave (    data_in : in std_logic_vector; data_out : out std_logic_vector;
                        signal sclk : in std_logic;      signal ste : in  std_logic;
                        signal mosi : in std_logic;     signal miso : out std_logic;
-                       cpol        : in natural range 0 to 1; cpha : in  natural range 0 to 1);
+                               dir : in natural range 0 to 1; cpol : in  natural range 0 to 1;
+                              cpha : in natural range 0 to 1);
 
 
 end package SimP;
@@ -51,18 +52,26 @@ package body SimP is
   procedure spi_master (    data_in : in    std_logic_vector;   data_out : out std_logic_vector;
                         signal sclk : inout std_logic;        signal ste : out std_logic;
                         signal mosi : out   std_logic;       signal miso : in  std_logic;
-                               cpol : in    natural range 0 to 1;   cpha : in  natural range 0 to 1;
-                             period : in    time) is
+                                dir : in    natural range 0 to 1;   cpol : in  natural range 0 to 1;
+                               cpha : in  natural range 0 to 1;   period : in  time) is
   begin
-    assert_equal(data_in'length, data_out'length, "data_in & data_out must have same length!");
+    assert_equal(data_in'length, data_out'length, spi_master'simple_name & ": data_in & data_out must have same length!");
     sclk <= std_logic'val(cpol+2);
     ste  <= '0';
     if (cpha = 0) then
       for i in data_in'range loop
-        mosi <= data_in(i);
+        if (dir = 0) then
+          mosi <= data_in(data_in'high - i);
+        else
+          mosi <= data_in(i);
+        end if;
         wait for period/2;
         sclk <= not(sclk);
-        data_out(i) := miso;
+        if (dir = 0) then
+          data_out(data_out'high - i) := miso;
+        else
+          data_out(i) := miso;
+        end if;
         wait for period/2;
         sclk <= not(sclk);
       end loop;
@@ -72,10 +81,18 @@ package body SimP is
       wait for period/2;
       for i in data_in'range loop
         sclk <= not(sclk);
-        mosi <= data_in(i);
+        if (dir = 0) then
+          mosi <= data_in(data_in'high - i);
+        else
+          mosi <= data_in(i);
+        end if;
         wait for period/2;
         sclk <= not(sclk);
-        data_out(i) := miso;
+        if (dir = 0) then
+          data_out(data_out'high - i) := miso;
+        else
+          data_out(i) := miso;
+        end if;
         wait for period/2;
       end loop;
     end if;
@@ -89,25 +106,42 @@ package body SimP is
   procedure spi_slave (    data_in : in std_logic_vector; data_out : out std_logic_vector;
                        signal sclk : in std_logic;      signal ste : in  std_logic;
                        signal mosi : in std_logic;     signal miso : out std_logic;
-                              cpol : in natural range 0 to 1; cpha : in  natural range 0 to 1) is
-    variable v_cpol : std_logic := std_logic'val(cpol+2);
+                              dir  : in natural range 0 to 1; cpol : in  natural range 0 to 1;
+                              cpha : in natural range 0 to 1) is
+    variable v_cpol   : std_logic := std_logic'val(cpol+2);
   begin
-    assert_equal(data_in'length, data_out'length, "data_in & data_out must have same length!");
+    assert_equal(data_in'length, data_out'length, spi_slave'simple_name & ": data_in & data_out must have same length!");
     miso <= 'Z';
     wait until ste = '0';
     if (cpha = 0) then
       for i in data_in'range loop
-        miso <= data_in(i);
+        if (dir = 0) then
+          miso <= data_in(data_in'high - i);
+        else
+          miso <= data_in(i);
+        end if;
         wait until sclk'event and sclk = not(v_cpol);
-        data_out(i) := mosi;
+        if (dir = 0) then
+          data_out(data_out'high - i) := mosi;
+        else
+          data_out(i) := mosi;
+        end if;
         wait until sclk'event and sclk = v_cpol;
       end loop;
     else
       for i in data_in'range loop
         wait until sclk'event and sclk = not(v_cpol);
-        miso <= data_in(i);
+        if (dir = 0) then
+          miso <= data_in(data_in'high - i);
+        else
+          miso <= data_in(i);
+        end if;
         wait until sclk'event and sclk = v_cpol;
-        data_out(i) := mosi;
+        if (dir = 0) then
+          data_out(data_out'high - i) := mosi;
+        else
+          data_out(i) := mosi;
+        end if;
       end loop;
     end if;
     wait until ste = '1';

@@ -76,22 +76,25 @@ begin
     variable v_random       : RandomPType;
   begin
     v_random.InitSeed(v_random'instance_name);
-    for mode in 0 to 3 loop
-      for i in 0 to 255 loop
-        v_send_data := v_random.RandSlv(C_DATA_WIDTH);
-        sv_mosi_queue.push(v_send_data);
-        spi_master (data_in  => v_send_data,
-                    data_out => v_receive_data,
-                    sclk     => s_sclk,
-                    ste      => s_ste,
-                    mosi     => s_mosi,
-                    miso     => s_miso,
-                    cpol     => mode / 2,
-                    cpha     => mode mod 2,
-                    period   => 1 us
-        );
-        sv_miso_queue.pop(v_queue_data);
-        assert_equal(v_receive_data, v_queue_data);
+    for direction in 0 to 1 loop
+      for mode in 0 to 3 loop
+        for i in 0 to 255 loop
+          v_send_data := v_random.RandSlv(C_DATA_WIDTH);
+          sv_mosi_queue.push(v_send_data);
+          spi_master (data_in  => v_send_data,
+                      data_out => v_receive_data,
+                      sclk     => s_sclk,
+                      ste      => s_ste,
+                      mosi     => s_mosi,
+                      miso     => s_miso,
+                      dir      => direction,
+                      cpol     => mode / 2,
+                      cpha     => mode mod 2,
+                      period   => 1 us
+          );
+          sv_miso_queue.pop(v_queue_data);
+          assert_equal(v_receive_data, v_queue_data);
+        end loop;
       end loop;
     end loop;
     wait;
@@ -107,24 +110,27 @@ begin
     variable v_random       : RandomPType;
   begin
     v_random.InitSeed(v_random'instance_name);
-    for mode in 0 to 3 loop
-      for i in 0 to 255 loop
-        v_send_data := v_random.RandSlv(C_DATA_WIDTH);
-        sv_miso_queue.push(v_send_data);
-        spi_slave (data_in  => v_send_data,
-                   data_out => v_receive_data,
-                   sclk     => s_sclk,
-                   ste      => s_ste,
-                   mosi     => s_mosi,
-                   miso     => s_miso,
-                   cpol     => mode / 2,
-                   cpha     => mode mod 2
-        );
-        sv_mosi_queue.pop(v_queue_data);
-        assert_equal(v_receive_data, v_queue_data);
+    for direction in 0 to 1 loop
+      for mode in 0 to 3 loop
+        for i in 0 to 255 loop
+          v_send_data := v_random.RandSlv(C_DATA_WIDTH);
+          sv_miso_queue.push(v_send_data);
+          spi_slave (data_in  => v_send_data,
+                     data_out => v_receive_data,
+                     sclk     => s_sclk,
+                     ste      => s_ste,
+                     mosi     => s_mosi,
+                     miso     => s_miso,
+                     dir      => direction,
+                     cpol     => mode / 2,
+                     cpha     => mode mod 2
+          );
+          sv_mosi_queue.pop(v_queue_data);
+          assert_equal(v_receive_data, v_queue_data);
+        end loop;
       end loop;
     end loop;
-    report "INFO: spi_* procedures tests finished successfully";
+    report "INFO: All tests of valid spi_master() & spi_slave() combinations finished successfully";
     s_tests_done(1) <= true;
     wait;
   end process SpiSlaveP;

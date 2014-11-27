@@ -104,7 +104,6 @@ begin
       v_bit_counter    := C_BIT_COUNTER_START;
       v_sclk_counter   := G_SCLK_DIVIDER-1;
       s_transfer_valid <= false;
-      s_ste            <= '1';
       s_sclk           <= std_logic'val(G_SPI_CPOL+2);
       s_mosi           <= '1';
       s_spi_state      <= IDLE;
@@ -112,15 +111,13 @@ begin
       case s_spi_state is
 
         when IDLE =>
-          s_ste            <= '1';
           s_sclk           <= std_logic'val(G_SPI_CPOL+2);
-          s_mosi           <= '0';
+          s_mosi           <= '1';
           s_recv_register  <= (others => '0');
           v_bit_counter    := C_BIT_COUNTER_START;
           v_sclk_counter   := G_SCLK_DIVIDER/2-1;
           s_transfer_valid <= false;
           if(DataValid_i = '1' and s_data_accept = '1') then
-            s_ste       <= '0';
             s_spi_state <= WRITE;
           end if;
 
@@ -182,7 +179,6 @@ begin
 
         when SET_STE =>
           s_transfer_valid <= false;
-          s_ste <= '1';
           if (v_sclk_counter = 0) then
             s_spi_state      <= IDLE;
           else
@@ -218,12 +214,15 @@ begin
   end process RecvRegisterP;
 
 
+  --+ internal signals
+  s_ste <= '1' when s_spi_state = IDLE or s_spi_state = SET_STE else '0';
+
   --+ Output port connections
   DataValid_o  <= s_data_valid;
   DataAccept_o <= s_data_accept;
-  SpiSte_o    <= s_ste;
-  SpiSclk_o   <= s_sclk;
-  SpiMosi_o   <= s_mosi;
+  SpiSte_o     <= s_ste;
+  SpiSclk_o    <= s_sclk;
+  SpiMosi_o    <= s_mosi when s_ste = '0' else '1';
 
 
   assert G_SCLK_DIVIDER rem 2 = 0

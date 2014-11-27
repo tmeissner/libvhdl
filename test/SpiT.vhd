@@ -240,6 +240,7 @@ begin
         variable v_random       : RandomPType;
       begin
         v_random.InitSeed(v_random'instance_name);
+        s_miso <= 'Z';
         wait until s_reset_n = '1';
         for i in 0 to integer'(2**C_DATA_WIDTH-1) loop
           v_send_data := v_random.RandSlv(C_DATA_WIDTH);

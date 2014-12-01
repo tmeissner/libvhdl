@@ -137,6 +137,14 @@ begin
     begin
 
 
+        QueueInitP : process is
+        begin
+          sv_mosi_queue.init(32);
+          sv_miso_queue.init(32);
+          wait;
+        end process QueueInitP;
+
+
       --* Stimuli generator and BFM for the valid-accept interface
       --* on the local data input of the DUT
       --*
@@ -286,6 +294,14 @@ begin
 
 
     begin
+
+
+        QueueInitP : process is
+        begin
+          sv_mosi_queue.init(32);
+          sv_miso_queue.init(32);
+          wait;
+        end process QueueInitP;
 
 
       --* Unit test of spi master procedure, checks all combinations

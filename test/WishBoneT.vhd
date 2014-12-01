@@ -139,6 +139,13 @@ begin
   s_wb_reset <= '0' after C_PERIOD * 5;
 
 
+  QueueInitP : process is
+  begin
+    sv_wishbone_queue.init(2**C_ADDRESS_WIDTH);
+    wait;
+  end process QueueInitP;
+
+
   WbMasterLocalP : process is
     variable v_random : RandomPType;
     variable v_wbmaster_data : std_logic_vector(C_DATA_WIDTH-1 downto 0);

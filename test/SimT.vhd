@@ -53,6 +53,14 @@ begin
   s_clk <= not(s_clk) after C_PERIOD when not(and_reduce(s_tests_done)) else '0';
 
 
+  QueueInitP : process is
+  begin
+    sv_mosi_queue.init(32);
+    sv_miso_queue.init(32);
+    wait;
+  end process QueueInitP;
+
+
   SimTestP : process is
     variable v_time : time;
   begin

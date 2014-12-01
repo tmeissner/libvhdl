@@ -30,7 +30,7 @@ package QueueP is
 
     procedure push (data : in  std_logic_vector);
     procedure pop  (data : inout std_logic_vector);
-    procedure logging (logging : in boolean);
+    procedure init (depth : in natural; logging : in boolean := false);
     impure function is_empty return boolean;
     impure function is_full  return boolean;
     impure function fillstate return natural;
@@ -112,7 +112,8 @@ package body QueueP is
   -- linked liste queue implementation
   type t_list_queue is protected body
 
-    constant C_QUEUE_DEPTH : natural := 64;
+
+    variable v_queue_depth : natural := 0;
     constant C_QUEUE_WIDTH : natural := 8;
 
     type t_entry;
@@ -126,7 +127,7 @@ package body QueueP is
 
     variable v_head : t_entry_ptr;
     variable v_tail : t_entry_ptr;
-    variable v_count : natural range 0 to C_QUEUE_DEPTH := 0;
+    variable v_count : natural := 0;
     variable v_logging : boolean := false;
 
     -- write one entry into queue by
@@ -167,10 +168,11 @@ package body QueueP is
       end if;
     end procedure pop;
 
-    procedure logging (logging : in boolean) is
+    procedure init (depth : in natural; logging : in boolean := false) is
     begin
-      v_logging := logging;
-    end procedure logging;
+      v_queue_depth := depth;
+      v_logging     := logging;
+    end procedure init;
 
     -- returns true if queue is empty, false otherwise
     impure function is_empty return boolean is
@@ -181,7 +183,7 @@ package body QueueP is
     -- returns true if queue is full, false otherwise
     impure function is_full return boolean is
     begin
-      return v_count = C_QUEUE_DEPTH;
+      return v_count = v_queue_depth;
     end function is_full;
 
     -- returns number of filled slots in queue
@@ -193,7 +195,7 @@ package body QueueP is
     -- returns number of free slots in queue
     impure function freeslots return natural is
     begin
-      return C_QUEUE_DEPTH - v_count;
+      return v_queue_depth - v_count;
     end function freeslots;
 
   end protected body t_list_queue;

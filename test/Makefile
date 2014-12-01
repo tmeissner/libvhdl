@@ -36,6 +36,13 @@ spit : vhdl2008 osvvm SpiT.vhd $(SIM_SRC)/AssertP.vhd $(SIM_SRC)/SimP.vhd $(SIM_
 	ghdl -e --std=$(VHD_STD) --ieee=synopsys SpiT
 	ghdl -r --std=$(VHD_STD) SpiT --wave=spit.ghw
 
+wishbonet : vhdl2008 osvvm WishBoneT.vhd $(SYN_SRC)/WishBoneMasterE.vhd $(SYN_SRC)/WishBoneSlaveE.vhd
+	ghdl -a --std=$(VHD_STD) --work=libvhdl $(SIM_SRC)/AssertP.vhd $(SIM_SRC)/SimP.vhd $(SIM_SRC)/QueueP.vhd
+	ghdl -a --std=$(VHD_STD) -fpsl $(SYN_SRC)/WishBoneMasterE.vhd $(SYN_SRC)/WishBoneSlaveE.vhd
+	ghdl -a --std=$(VHD_STD) --ieee=synopsys WishBoneT.vhd
+	ghdl -e --std=$(VHD_STD) --ieee=synopsys WishBoneT
+	ghdl -r --std=$(VHD_STD) --ieee=synopsys WishBoneT --wave=wishbonet.ghw
+
 .PHONY: clean
 clean:
 	rm -f *.o
@@ -45,6 +52,7 @@ clean:
 	rm -f stringt
 	rm -f simt
 	rm -f spit
+	rm -f wishbonet
 
 .PHONY: distclean
 distclean: clean

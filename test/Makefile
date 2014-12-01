@@ -17,7 +17,7 @@ $(VHD08_SRC)/standard_additions_c.vhdl $(VHD08_SRC)/standard_textio_additions_c.
 osvvm : vhdl2008 osvvm_2.1/SortListPkg_int.vhd osvvm_2.1/RandomBasePkg.vhd osvvm_2.1/RandomPkg.vhd
 	ghdl -a --std=$(VHD_STD) --work=osvvm --ieee=synopsys osvvm_2.1/SortListPkg_int.vhd osvvm_2.1/RandomBasePkg.vhd osvvm_2.1/RandomPkg.vhd
 
-queuet : QueueT.vhd $(SIM_SRC)/QueueP.vhd $(SIM_SRC)/AssertP.vhd
+queuet : vhdl2008 QueueT.vhd $(SIM_SRC)/QueueP.vhd $(SIM_SRC)/AssertP.vhd
 	ghdl -a --std=$(VHD_STD) --work=libvhdl $(SIM_SRC)/AssertP.vhd $(SIM_SRC)/QueueP.vhd
 	ghdl -a --std=$(VHD_STD) QueueT.vhd
 	ghdl -e --std=$(VHD_STD) QueueT

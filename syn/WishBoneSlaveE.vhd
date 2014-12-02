@@ -57,7 +57,7 @@ begin
             s_wb_slave_fsm <= ADDRESS;
 
           when ADDRESS =>
-            if s_wb_active then
+            if (s_wb_active and WbWe_i = '0') then
               s_wb_slave_fsm <= DATA;
             end if;
 
@@ -76,14 +76,14 @@ begin
   s_wb_active <= true when s_wb_slave_fsm /= IDLE and WbCyc_i = '1' and WbStb_i = '1' else false;
 
   --+ local register if outputs
-  LocalWen_o     <= WbWe_i      when s_wb_slave_fsm  = DATA    and s_wb_active else '0';
+  LocalWen_o     <= WbWe_i      when s_wb_slave_fsm  = ADDRESS and s_wb_active else '0';
   LocalRen_o     <= not(WbWe_i) when s_wb_slave_fsm  = ADDRESS and s_wb_active else '0';
   LocalAdress_o  <= WbAdr_i     when s_wb_slave_fsm /= IDLE    and s_wb_active else (others => '0');
-  LocalData_o    <= WbDat_i     when s_wb_slave_fsm  = DATA    and s_wb_active and WbWe_i = '1' else (others => '0');
+  LocalData_o    <= WbDat_i     when s_wb_slave_fsm  = ADDRESS and s_wb_active and WbWe_i = '1' else (others => '0');
 
   --+ wishbone if outputs
   WbDat_o <= LocalData_i when s_wb_slave_fsm = DATA and WbWe_i = '0' else (others => '0');
-  WbAck_o <= '1'         when s_wb_slave_fsm = DATA else '0';
+  WbAck_o <= '1'         when s_wb_slave_fsm = DATA or (s_wb_slave_fsm = ADDRESS and s_wb_active and WbWe_i = '1') else '0';
   WbErr_o <= '0';
 
 

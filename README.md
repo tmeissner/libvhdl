@@ -41,6 +41,11 @@ Configurable SPI master with support modes 0-3 and simple VAI local backend.
 ##### SpiSlaveE
 Configurable SPI slave with support modes 0-3 and simple VAI local backend.
 
+##### WishBoneMasterE
+Simple WishBone bus master with support of classic single write & read
+
+##### WishBoneSlaveE
+Simple WishBone bus slave with support of classic single write & read and register backend
 
 
 ##test
@@ -53,7 +58,10 @@ Unit tests for components of QueueP package
 Unit tests for components of SimP package
 
 ##### SpiT
-Unit tests for SpiSlave component
+Unit tests for SpiMasterE and SpiSlaveE components
+
+##### WishBoneT
+Unit tests for WishBoneMasterE and WishBoneSlaveE components
 
 
 ## Dependencies

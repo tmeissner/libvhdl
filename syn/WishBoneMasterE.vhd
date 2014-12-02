@@ -62,10 +62,10 @@ begin
             end if;
 
           when ADDRESS =>
-            if (WbErr_i = '0') then
-              s_wb_master_fsm <= DATA;
-            else
+            if (WbAck_i = '1' or WbErr_i = '1') then
               s_wb_master_fsm <= IDLE;
+            else
+              s_wb_master_fsm <= DATA;
             end if;
 
           when DATA =>
@@ -85,7 +85,7 @@ begin
   --+ combinatoral local register if outputs
   LocalData_o  <= WbDat_i when s_wb_master_fsm  = DATA else (others => '0');
   LocalError_o <= WbErr_i when s_wb_master_fsm /= IDLE else '0';
-  LocalAck_o   <= WbAck_i when s_wb_master_fsm  = DATA and WbErr_i = '0' else '0';
+  LocalAck_o   <= WbAck_i when (s_wb_master_fsm = ADDRESS or s_wb_master_fsm = DATA) and WbErr_i = '0' else '0';
 
   --+ combinatoral wishbone if outputs
   WbStb_o <= '1'      when s_wb_master_fsm /= IDLE else '0';

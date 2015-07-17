@@ -1,5 +1,5 @@
 # libvhdl
-A LGPLv3 licensed library of reusable components for VHDL designs and testbenches
+A OHDL licensed library of reusable components for VHDL designs and testbenches
 
 
 ##sim

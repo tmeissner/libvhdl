@@ -5,10 +5,10 @@ library ieee;
 --+ including vhdl 2008 libraries
 --+ These lines can be commented out when using
 --+ a simulator with built-in VHDL 2008 support
-library ieee_proposed;
-  use ieee_proposed.standard_additions.all;
-  use ieee_proposed.std_logic_1164_additions.all;
-  use ieee_proposed.numeric_std_additions.all;
+--library ieee_proposed;
+--  use ieee_proposed.standard_additions.all;
+--  use ieee_proposed.std_logic_1164_additions.all;
+--  use ieee_proposed.numeric_std_additions.all;
 
 library osvvm;
   use osvvm.RandomPkg.all;

@@ -9,10 +9,10 @@ package DictP is
   type t_dict is protected
 
     procedure set (key : in string; data : in std_logic_vector);
-    procedure get (key : in string; data : out std_logic_vector);
-    procedure del (key : in string);
+    procedure get (key : in string; data : out std_logic_vector; err : out boolean);
+    procedure del (key : in string; err : out boolean);
     procedure init (logging : in boolean := false);
-    procedure clear;
+    procedure clear (err : out boolean);
     impure function hasKey (key : string) return boolean;
     impure function size return natural;
 
@@ -79,7 +79,7 @@ package body DictP is
       end if;
     end procedure set;
 
-    procedure get (key : in string; data : out std_logic_vector) is
+    procedure get (key : in string; data : out std_logic_vector; err : out boolean) is
       variable v_entry : t_entry_ptr := find(key);
     begin
       if(v_entry /= null) then
@@ -87,12 +87,13 @@ package body DictP is
         if v_logging then
           report t_dict'instance_name & ": Got key " & key & " with data 0x" & to_hstring(v_entry.data.all);
         end if;
-        return;
+        err := false;
+      else
+        err := true;
       end if;
-      assert false;
     end procedure get;
 
-    procedure del (key : in string) is
+    procedure del (key : in string; err : out boolean) is
       variable v_entry : t_entry_ptr := find(key);
     begin
       if (v_entry /= null) then
@@ -112,6 +113,9 @@ package body DictP is
         deallocate(v_entry.data);
         deallocate(v_entry);
         v_size := v_size - 1;
+        err := false;
+      else
+        err := true;
       end if;
     end procedure del;
 
@@ -127,14 +131,21 @@ package body DictP is
       return null;
     end function find;
 
-    procedure clear is
+    procedure clear (err : out boolean) is
       variable v_entry   : t_entry_ptr := v_head;
       variable v_entry_d : t_entry_ptr;
+      variable v_err     : boolean;
     begin
+      err := false;
       while (v_entry /= null) loop
         v_entry_d := v_entry;
-        del(v_entry_d.key.all);
-        v_entry := v_entry.last_entry;
+        del(v_entry_d.key.all, v_err);
+        if v_err then
+          err := true;
+          return;
+        else
+          v_entry := v_entry.last_entry;
+        end if;
       end loop;
     end procedure clear;
 

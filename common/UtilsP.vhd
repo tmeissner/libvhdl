@@ -13,8 +13,12 @@ package UtilsP is
   function or_reduce (data : in std_logic_vector) return std_logic;
   function or_reduce (data : in boolean_vector) return boolean;
 
+  function xor_reduce (data : in std_logic_vector) return std_logic;
+
   function even_parity (data : in std_logic_vector) return std_logic;
   function odd_parity (data : in std_logic_vector) return std_logic;
+
+  function count_ones (data : in std_logic_vector) return natural;
 
 
 end package UtilsP;
@@ -66,23 +70,34 @@ package body UtilsP is
   end function or_reduce;
 
 
-  function even_parity (data : in std_logic_vector) return std_logic is
+  function xor_reduce (data : in std_logic_vector) return std_logic is
     variable v_return : std_logic := '0';
   begin
-    for i in data'range loop
+     for i in data'range loop
       v_return := v_return xor data(i);
     end loop;
     return v_return;
+  end function xor_reduce;
+
+
+  function even_parity (data : in std_logic_vector) return std_logic is
+  begin
+    return xor_reduce(data);
   end function even_parity;
 
   function odd_parity (data : in std_logic_vector) return std_logic is
-    variable v_return : std_logic := '1';
+  begin
+    return not(xor_reduce(data));
+  end function odd_parity;
+
+
+  function count_ones (data : in std_logic_vector) return natural is
+    variable v_return : natural := 0;
   begin
     for i in data'range loop
-      v_return := v_return xor data(i);
+      v_return := v_return + 1;
     end loop;
-    return v_return;
-  end function odd_parity;
+  end function count_ones;
 
 
 end package body UtilsP;

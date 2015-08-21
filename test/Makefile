@@ -1,10 +1,13 @@
-SIM_SRC = ../sim
-SYN_SRC = ../syn
-VHD08_SRC = vhdl_2008
-VHD_STD = 02
+SIM_SRC := ../sim
+SYN_SRC := ../syn
+CMN_SRC := ../common
+VHD08_SRC := vhdl_2008
+VHD_STD := 08
 
-.PHONY: sim
-sim: vhdl2008 osvvm queuet simt spit
+
+.PHONY: all
+all: queue dict sim wishbone
+
 
 .PHONY: vhdl2008
 vhdl2008 : $(VHD08_SRC)/env_c.vhdl $(VHD08_SRC)/numeric_std_additions.vhdl $(VHD08_SRC)/numeric_std_unsigned_c.vhdl \
@@ -13,35 +16,61 @@ $(VHD08_SRC)/standard_additions_c.vhdl $(VHD08_SRC)/standard_textio_additions_c.
 	$(VHD08_SRC)/standard_textio_additions_c.vhdl $(VHD08_SRC)/std_logic_1164_additions.vhdl $(VHD08_SRC)/numeric_std_additions.vhdl \
 	$(VHD08_SRC)/numeric_std_unsigned_c.vhdl $(VHD08_SRC)/env_c.vhdl
 
-.PHONY: osvvm
-osvvm : vhdl2008 osvvm_2.1/SortListPkg_int.vhd osvvm_2.1/RandomBasePkg.vhd osvvm_2.1/RandomPkg.vhd
-	ghdl -a --std=$(VHD_STD) --work=osvvm --ieee=synopsys osvvm_2.1/SortListPkg_int.vhd osvvm_2.1/RandomBasePkg.vhd osvvm_2.1/RandomPkg.vhd
 
-queuet : vhdl2008 QueueT.vhd $(SIM_SRC)/QueueP.vhd $(SIM_SRC)/AssertP.vhd
-	ghdl -a --std=$(VHD_STD) --work=libvhdl $(SIM_SRC)/AssertP.vhd $(SIM_SRC)/QueueP.vhd
+RandomPkg.o: OSVVM/SortListPkg_int.vhd OSVVM/RandomBasePkg.vhd OSVVM/RandomPkg.vhd
+	ghdl -a --std=$(VHD_STD) --work=osvvm $^
+
+CoveragePkg.o: RandomPkg.o OSVVM/MessagePkg.vhd
+	ghdl -a --std=$(VHD_STD) --work=osvvm OSVVM/MessagePkg.vhd OSVVM/CoveragePkg.vhd
+
+UtilsP.o: $(CMN_SRC)/UtilsP.vhd
+	ghdl -a --std=$(VHD_STD) --work=libvhdl $<
+
+
+# Default rule for compiling packages
+%P.o: $(SIM_SRC)/%P.vhd
+	ghdl -a --std=$(VHD_STD) --work=libvhdl $<
+
+
+queuet: AssertP.o QueueP.o QueueT.vhd
 	ghdl -a --std=$(VHD_STD) QueueT.vhd
-	ghdl -e --std=$(VHD_STD) QueueT
-	ghdl -r --std=$(VHD_STD) QueueT
+	ghdl -e --std=$(VHD_STD) $@
 
-simt : vhdl2008 osvvm SimT.vhd $(SIM_SRC)/QueueP.vhd $(SIM_SRC)/AssertP.vhd $(SIM_SRC)/SimP.vhd
-	ghdl -a --std=$(VHD_STD) --work=libvhdl $(SIM_SRC)/QueueP.vhd $(SIM_SRC)/AssertP.vhd $(SIM_SRC)/SimP.vhd
-	ghdl -a --std=$(VHD_STD) --ieee=synopsys SimT.vhd
-	ghdl -e --std=$(VHD_STD) --ieee=synopsys SimT
-	ghdl -r --std=$(VHD_STD) SimT
 
-spit : vhdl2008 osvvm SpiT.vhd $(SIM_SRC)/AssertP.vhd $(SIM_SRC)/SimP.vhd $(SIM_SRC)/QueueP.vhd $(SYN_SRC)/SpiSlaveE.vhd $(SYN_SRC)/SpiMasterE.vhd
-	ghdl -a --std=$(VHD_STD) --work=libvhdl $(SIM_SRC)/AssertP.vhd $(SIM_SRC)/SimP.vhd $(SIM_SRC)/QueueP.vhd
+dictt: RandomPkg.o DictP.o DictT.vhd
+	ghdl -a --std=$(VHD_STD) DictT.vhd
+	ghdl -e --std=$(VHD_STD) $@
+
+
+simt: RandomPkg.o UtilsP.o AssertP.o QueueP.o SimP.o SimT.vhd
+	ghdl -a --std=$(VHD_STD) SimT.vhd
+	ghdl -e --std=$(VHD_STD) $@
+
+
+spit: RandomPkg.o UtilsP.o $(SYN_SRC)/SpiSlaveE.vhd $(SYN_SRC)/SpiMasterE.vhd SpiT.vhd
 	ghdl -a --std=$(VHD_STD) -fpsl $(SYN_SRC)/SpiSlaveE.vhd $(SYN_SRC)/SpiMasterE.vhd
-	ghdl -a --std=$(VHD_STD) --ieee=synopsys -fpsl SpiT.vhd
-	ghdl -e --std=$(VHD_STD) --ieee=synopsys SpiT
-	ghdl -r --std=$(VHD_STD) SpiT --wave=spit.ghw
+	ghdl -a --std=$(VHD_STD) -fpsl SpiT.vhd
+	ghdl -e --std=$(VHD_STD) $@
 
-wishbonet : vhdl2008 osvvm WishBoneT.vhd $(SYN_SRC)/WishBoneMasterE.vhd $(SYN_SRC)/WishBoneSlaveE.vhd
-	ghdl -a --std=$(VHD_STD) --work=libvhdl $(SIM_SRC)/AssertP.vhd $(SIM_SRC)/SimP.vhd $(SIM_SRC)/QueueP.vhd
+.PHONY: spi
+spi: spit
+	ghdl -r --std=$(VHD_STD) $@t --wave=$@t.ghw
+
+
+wishbonet: RandomPkg.o AssertP.o SimP.o QueueP.o $(SYN_SRC)/WishBoneMasterE.vhd $(SYN_SRC)/WishBoneSlaveE.vhd WishBoneT.vhd
 	ghdl -a --std=$(VHD_STD) -fpsl $(SYN_SRC)/WishBoneMasterE.vhd $(SYN_SRC)/WishBoneSlaveE.vhd
-	ghdl -a --std=$(VHD_STD) --ieee=synopsys WishBoneT.vhd
-	ghdl -e --std=$(VHD_STD) --ieee=synopsys WishBoneT
-	ghdl -r --std=$(VHD_STD) --ieee=synopsys WishBoneT --wave=wishbonet.ghw
+	ghdl -a --std=$(VHD_STD) WishBoneT.vhd
+	ghdl -e --std=$(VHD_STD) $@
+
+.PHONY: wishbone
+wishbone: wishbonet
+	ghdl -r --std=$(VHD_STD) $@t --wave=$@t.ghw
+
+
+# Default rule for running simulation
+%: %t
+	ghdl -r --std=$(VHD_STD) $@t
+
 
 .PHONY: clean
 clean:
@@ -49,6 +78,7 @@ clean:
 	rm -f *.cf
 	rm -f *.ghw
 	rm -f queuet
+	rm -f dictt
 	rm -f stringt
 	rm -f simt
 	rm -f spit

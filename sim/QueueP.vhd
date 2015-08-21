@@ -4,9 +4,9 @@ library ieee;
 --+ including vhdl 2008 libraries
 --+ These lines can be commented out when using
 --+ a simulator with built-in VHDL 2008 support
-library ieee_proposed;
-  use ieee_proposed.standard_additions.all;
-  use ieee_proposed.std_logic_1164_additions.all;
+--library ieee_proposed;
+--  use ieee_proposed.standard_additions.all;
+--  use ieee_proposed.std_logic_1164_additions.all;
 
 
 package QueueP is
@@ -32,9 +32,7 @@ package QueueP is
     procedure pop  (data : inout std_logic_vector);
     procedure init (depth : in natural; logging : in boolean := false);
     impure function is_empty return boolean;
-    impure function is_full  return boolean;
     impure function fillstate return natural;
-    impure function freeslots return natural;
 
   end protected t_list_queue;
 
@@ -113,14 +111,15 @@ package body QueueP is
   type t_list_queue is protected body
 
 
-    variable v_queue_depth : natural := 0;
     constant C_QUEUE_WIDTH : natural := 8;
 
     type t_entry;
     type t_entry_ptr is access t_entry;
 
+    type t_data_ptr is access std_logic_vector;
+
     type t_entry is record
-      data       : std_logic_vector(C_QUEUE_WIDTH-1 downto 0);
+      data       : t_data_ptr;
       last_entry : t_entry_ptr;
       next_entry : t_entry_ptr;
     end record t_entry;
@@ -133,15 +132,20 @@ package body QueueP is
     -- write one entry into queue by
     -- creating new entry at head of list
     procedure push (data : in  std_logic_vector) is
+      variable v_entry : t_entry_ptr;
     begin
-      assert not(is_full)
-        report "push into full queue -> discarded"
-        severity failure;
       if (v_count /= 0) then
-        v_head := new t_entry'(data, v_head, null);
+        v_entry            := new t_entry;
+        v_entry.data       := new std_logic_vector'(data);
+        v_entry.last_entry := v_head;
+        v_entry.next_entry := null;
+        v_head             := v_entry;
         v_head.last_entry.next_entry := v_head;
       else
-        v_head := new t_entry'(data, null, null);
+        v_head            := new t_entry;
+        v_head.data       := new std_logic_vector'(data);
+        v_head.last_entry := null;
+        v_head.next_entry := null;
         v_tail := v_head;
       end if;
       v_count := v_count + 1;
@@ -153,14 +157,14 @@ package body QueueP is
     -- read one entry from queue at tail of list and
     -- delete that entry from list after read
     procedure pop  (data : inout std_logic_vector) is
-      variable v_entry : t_entry_ptr;
+      variable v_entry : t_entry_ptr := v_tail;
     begin
       assert not(is_empty)
         report "pop from empty queue -> discarded"
         severity failure;
-      data := v_tail.data;
-      v_entry := v_tail;
+      data   := v_tail.data.all;
       v_tail := v_tail.next_entry;
+      deallocate(v_entry.data);
       deallocate(v_entry);
       v_count := v_count - 1;
       if v_logging then
@@ -170,8 +174,7 @@ package body QueueP is
 
     procedure init (depth : in natural; logging : in boolean := false) is
     begin
-      v_queue_depth := depth;
-      v_logging     := logging;
+      v_logging := logging;
     end procedure init;
 
     -- returns true if queue is empty, false otherwise
@@ -180,23 +183,11 @@ package body QueueP is
       return v_tail = null;
     end function is_empty;
 
-    -- returns true if queue is full, false otherwise
-    impure function is_full return boolean is
-    begin
-      return v_count = v_queue_depth;
-    end function is_full;
-
     -- returns number of filled slots in queue
     impure function fillstate return natural is
     begin
       return v_count;
     end function fillstate;
-
-    -- returns number of free slots in queue
-    impure function freeslots return natural is
-    begin
-      return v_queue_depth - v_count;
-    end function freeslots;
 
   end protected body t_list_queue;
 

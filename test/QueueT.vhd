@@ -56,7 +56,7 @@ begin
 
 
   ListQueueTestP : process is
-    variable v_data  : std_logic_vector(7 downto 0);
+    variable v_data : std_logic_vector(7 downto 0);
   begin
     -- check initial emptiness
     assert_true(sv_list_queue.is_empty, "Queue should be empty!");
@@ -64,7 +64,7 @@ begin
       sv_list_queue.push(std_logic_vector(to_unsigned(i, 8)));
     end loop;
     -- check that it's full
-    assert_true(sv_list_queue.is_full, "Queue should be full!");
+    assert_equal(sv_list_queue.fillstate, C_QUEUE_DEPTH, "Queue should have" & integer'image(C_QUEUE_DEPTH) & "entries");
     -- empty the queue
     for i in 0 to C_QUEUE_DEPTH-1 loop
       sv_list_queue.pop(v_data);

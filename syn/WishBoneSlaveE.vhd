@@ -1,5 +1,6 @@
 library ieee;
   use ieee.std_logic_1164.all;
+  use ieee.numeric_std.all;
 
 
 
@@ -85,6 +86,47 @@ begin
   WbDat_o <= LocalData_i when s_wb_slave_fsm = DATA and WbWe_i = '0' else (others => '0');
   WbAck_o <= '1'         when s_wb_slave_fsm = DATA or (s_wb_slave_fsm = ADDRESS and s_wb_active and WbWe_i = '1') else '0';
   WbErr_o <= '0';
+
+
+  -- psl default clock is rising_edge(WbClk_i);
+  --
+  -- psl LOCAL_WRITE : assert always
+  --   ((WbCyc_i and WbStb_i and WbWe_i) ->
+  --    (LocalWen_o = '1' and WbAck_o = '1' and LocalAdress_o = WbAdr_i and LocalData_o = WbDat_i)) abort WbRst_i
+  --   report "PSL ERROR: Local write error";
+  --
+  -- psl LOCAL_READ : assert always
+  --   ({not(WbCyc_i) and not(WbStb_i); WbCyc_i and WbStb_i and not(WbWe_i)} |->
+  --    {LocalRen_o = '1' and LocalAdress_o = WbAdr_i and WbAck_o = '0'; LocalRen_o = '0' and WbDat_o = LocalData_i and WbAck_o = '1'}) abort WbRst_i
+  --   report "PSL ERROR: Local read error";
+  --
+  -- psl WB_ACK : assert always
+  --   WbAck_o ->
+  --   (WbCyc_i and WbStb_i)
+  --   report "PSL ERROR: WbAck invalid";
+  --
+  --  psl WB_ERR : assert always
+  --   WbErr_o ->
+  --   (WbCyc_i and WbStb_i)
+  --   report "PSL ERROR: WbErr invalid";
+  --
+  -- psl LOCAL_WE : assert always
+  --   LocalWen_o ->
+  --   (WbCyc_i and WbStb_i and WbWe_i and not(LocalRen_o)) ->
+  --   next not(LocalWen_o)
+  --   report "PSL ERROR: LocalWen invalid";
+  --
+  --  psl LOCAL_RE : assert always
+  --   LocalRen_o ->
+  --   (WbCyc_i and WbStb_i and not(WbWe_i) and not(LocalWen_o)) ->
+  --   next not(LocalRen_o)
+  --   report "PSL ERROR: LocalRen invalid";
+  --
+  -- psl RESET : assert always
+  --   WbRst_i ->
+  --   (to_integer(unsigned(WbDat_o)) = 0 and WbAck_o = '0' and WbErr_o = '0' and
+  --    LocalWen_o = '0' and LocalRen_o = '0' and to_integer(unsigned(LocalAdress_o)) = 0 and to_integer(unsigned(LocalData_o)) = 0)
+  --   report "PSL ERROR: Reset error";
 
 
 end architecture rtl;

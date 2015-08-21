@@ -59,7 +59,7 @@ spi: spit
 
 wishbonet: RandomPkg.o AssertP.o SimP.o QueueP.o $(SYN_SRC)/WishBoneMasterE.vhd $(SYN_SRC)/WishBoneSlaveE.vhd WishBoneT.vhd
 	ghdl -a --std=$(VHD_STD) -fpsl $(SYN_SRC)/WishBoneMasterE.vhd $(SYN_SRC)/WishBoneSlaveE.vhd
-	ghdl -a --std=$(VHD_STD) WishBoneT.vhd
+	ghdl -a --std=$(VHD_STD) -fpsl WishBoneT.vhd
 	ghdl -e --std=$(VHD_STD) $@
 
 .PHONY: wishbone

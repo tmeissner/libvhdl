@@ -1,7 +1,7 @@
 --
 --  File Name:         RandomBasePkg.vhd
 --  Design Unit Name:  RandomBasePkg
---  Revision:          STANDARD VERSION,  revision 2.0, VHDL-2008
+--  Revision:          STANDARD VERSION,  revision 2013.05
 --
 --  Maintainer:        Jim Lewis      email:  jim@synthworks.com
 --  Contributor(s):
@@ -36,9 +36,11 @@
 --                          to ieee_proposed.standard_additions.all ;
 --    03/01/2011 2.0        STANDARD VERSION
 --                          Fixed abstraction by moving RandomParmType to RandomPkg.vhd 
+--    4/2013     2013.04    No Changes
+--    5/2013     2013.05    No Changes
 --
 --
---  Copyright (c) 2008, 2009, 2010, 2011 by SynthWorks Design Inc.  All rights reserved.
+--  Copyright (c) 2008 - 2013 by SynthWorks Design Inc.  All rights reserved.
 --
 --  Verbatim copies of this source file may be used and
 --  distributed without restriction.
@@ -63,8 +65,8 @@ use ieee.math_real.all ;
 use std.textio.all ;
 
 -- comment out following 2 lines with VHDL-2008.  Leave in for VHDL-2002 
-library ieee_proposed ;						          -- remove with VHDL-2008
-use ieee_proposed.standard_additions.all ;   -- remove with VHDL-2008
+-- library ieee_proposed ;						          -- remove with VHDL-2008
+-- use ieee_proposed.standard_additions.all ;   -- remove with VHDL-2008
 
 
 package RandomBasePkg is

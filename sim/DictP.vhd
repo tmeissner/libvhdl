@@ -57,7 +57,7 @@ package body DictP is
           v_entry.key                  := new string'(key);
           v_entry.data                 := new std_logic_vector'(data);
           v_entry.last_entry           := v_head;
-          v_entry.next_entry           := v_entry;
+          v_entry.next_entry           := null;
           v_head                       := v_entry;
           v_head.last_entry.next_entry := v_head;
         else
@@ -65,7 +65,7 @@ package body DictP is
           v_head.key        := new string'(key);
           v_head.data       := new std_logic_vector'(data);
           v_head.last_entry := null;
-          v_head.next_entry := v_entry;
+          v_head.next_entry := null;
         end if;
         if (v_logging) then
           report t_dict'instance_name & ": Add key " & key & " with data 0x" & to_hstring(data);
@@ -98,14 +98,15 @@ package body DictP is
     begin
       if (v_entry /= null) then
         -- remove head entry
-        if(v_entry.next_entry = null) then
+        if(v_entry.next_entry = null and v_entry.last_entry /= null) then
           v_entry.last_entry.next_entry := null;
-          v_head := v_entry.last_entry;
+          v_head                        := v_entry.last_entry;
         -- remove start entry
-        elsif(v_entry.last_entry = null) then
+        elsif(v_entry.next_entry /= null and v_entry.last_entry = null) then
           v_entry.next_entry.last_entry := null;
-        -- remove entry between
-        else
+          v_entry.next_entry.last_entry := v_entry.last_entry;
+        -- remove from between
+        elsif(v_entry.next_entry /= null and v_entry.last_entry /= null) then
           v_entry.last_entry.next_entry := v_entry.next_entry;
           v_entry.next_entry.last_entry := v_entry.last_entry;
         end if;

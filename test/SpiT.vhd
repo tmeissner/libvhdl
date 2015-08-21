@@ -17,6 +17,7 @@ library libvhdl;
   use libvhdl.AssertP.all;
   use libvhdl.SimP.all;
   use libvhdl.QueueP.all;
+  use libvhdl.UtilsP.all;
 
 
 

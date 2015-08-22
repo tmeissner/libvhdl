@@ -112,14 +112,14 @@ begin
   --
   -- psl LOCAL_WE : assert always
   --   LocalWen_o ->
-  --   (WbCyc_i and WbStb_i and WbWe_i and not(LocalRen_o)) ->
-  --   next not(LocalWen_o)
+  --   (WbCyc_i and WbStb_i and WbWe_i and not(LocalRen_o)) and
+  --   (next not(LocalWen_o))
   --   report "PSL ERROR: LocalWen invalid";
   --
   --  psl LOCAL_RE : assert always
   --   LocalRen_o ->
-  --   (WbCyc_i and WbStb_i and not(WbWe_i) and not(LocalWen_o)) ->
-  --   next not(LocalRen_o)
+  --   (WbCyc_i and WbStb_i and not(WbWe_i) and not(LocalWen_o)) and
+  --   (next not(LocalRen_o))
   --   report "PSL ERROR: LocalRen invalid";
   --
   -- psl RESET : assert always

@@ -1,6 +1,6 @@
 library ieee;
   use ieee.std_logic_1164.all;
-
+  use ieee.numeric_std.all;
 
 
 entity WishBoneMasterE is
@@ -114,6 +114,19 @@ begin
       end if;
     end if;
   end process OutRegsP;
+
+
+  -- psl default clock is rising_edge(WbClk_i);
+  --
+  -- psl WB_WRITE : assert always
+  --   ((not(WbCyc_o) and not(WbStb_o) and LocalWen_i) ->
+  --    next (WbCyc_o = '1' and WbStb_o = '1' and WbWe_o = '1')) abort WbRst_i
+  --   report "PSL ERROR: Wishbone write error";
+  --
+  -- psl WB_READ : assert always
+  --   ((not(WbCyc_o) and not(WbStb_o) and LocalRen_i) |->
+  --    next (WbCyc_o = '1' and WbStb_o = '1' and WbWe_o = '0')) abort WbRst_i
+  --   report "PSL ERROR: Wishbone read error";
 
 
 end architecture rtl;

@@ -217,6 +217,25 @@ begin
     );
 
 
+    WishBoneBusMonitorP : process is
+      variable v_master_local_adress : std_logic_vector(C_ADDRESS_WIDTH-1 downto 0);
+      variable v_master_local_data   : std_logic_vector(C_DATA_WIDTH-1 downto 0);
+    begin
+      wait until s_master_local_wen = '1';
+      v_master_local_adress := s_master_local_adress;
+      v_master_local_data   := s_master_local_din;
+      wait until s_wb_cyc = '1';
+      WB_ADDR : assert s_wb_adr = v_master_local_adress
+        report "ERROR: Wishbone address 0x" & to_hstring(s_wb_adr) & " differ from local address 0x" & to_hstring(v_master_local_adress)
+        severity failure;
+      if (s_wb_we = '1') then
+        WB_DATA : assert s_wb_master_data = v_master_local_data
+          report "ERROR: Wishbone data 0x" & to_hstring(s_wb_master_data) & " differ from local data 0x" & to_hstring(v_master_local_data)
+          severity failure;
+      end if;
+    end process WishBoneBusMonitorP;
+
+
    i_WishBoneSlaveE : WishBoneSlaveE
     generic map (
       G_ADR_WIDTH  => C_ADDRESS_WIDTH,
@@ -245,19 +264,18 @@ begin
     );
 
 
-    WbSlaveLocalP : process (s_wb_clk) is
+    WbSlaveLocalP : process is
       variable v_register : t_register := (others => (others => '0'));
     begin
-      if (rising_edge(s_wb_clk)) then
-        if (s_wb_reset = '1') then
-          v_register        := (others => (others => '0'));
-          s_slave_local_din <= (others => '0');
-        else
-          if (s_slave_local_wen = '1') then
-            v_register(to_integer(unsigned(s_slave_local_adress))) := s_slave_local_dout;
-          elsif (s_slave_local_ren = '1') then
-            s_slave_local_din <= v_register(to_integer(unsigned(s_slave_local_adress)));
-          end if;
+      wait until rising_edge(s_wb_clk);
+      if (s_wb_reset = '1') then
+        v_register        := (others => (others => '0'));
+        s_slave_local_din <= (others => '0');
+      else
+        if (s_slave_local_wen = '1') then
+          v_register(to_integer(unsigned(s_slave_local_adress))) := s_slave_local_dout;
+        elsif (s_slave_local_ren = '1') then
+          s_slave_local_din <= v_register(to_integer(unsigned(s_slave_local_adress)));
         end if;
       end if;
     end process WbSlaveLocalP;

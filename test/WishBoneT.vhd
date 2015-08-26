@@ -17,6 +17,7 @@ library libvhdl;
   use libvhdl.AssertP.all;
   use libvhdl.SimP.all;
   use libvhdl.QueueP.all;
+  use libvhdl.UtilsP.all;
 
 
 
@@ -161,7 +162,7 @@ begin
     for i in 0 to integer'(2**C_ADDRESS_WIDTH-1) loop
       v_wbmaster_data       := v_random.RandSlv(C_DATA_WIDTH);
       s_master_local_din    <= v_wbmaster_data;
-      s_master_local_adress <= std_logic_vector(to_unsigned(i, C_ADDRESS_WIDTH));
+      s_master_local_adress <= uint_to_slv(i, C_ADDRESS_WIDTH);
       s_master_local_wen    <= '1';
       wait until rising_edge(s_wb_clk);
       s_master_local_din    <= (others => '0');
@@ -172,7 +173,7 @@ begin
     end loop;
     -- read back and check the wishbone slave registers
     for i in 0 to integer'(2**C_ADDRESS_WIDTH-1) loop
-      s_master_local_adress <= std_logic_vector(to_unsigned(i, C_ADDRESS_WIDTH));
+      s_master_local_adress <= uint_to_slv(i, C_ADDRESS_WIDTH);
       s_master_local_ren    <= '1';
       wait until rising_edge(s_wb_clk);
       s_master_local_adress <= (others => '0');
@@ -273,9 +274,9 @@ begin
         s_slave_local_din <= (others => '0');
       else
         if (s_slave_local_wen = '1') then
-          v_register(to_integer(unsigned(s_slave_local_adress))) := s_slave_local_dout;
+          v_register(slv_to_uint(s_slave_local_adress)) := s_slave_local_dout;
         elsif (s_slave_local_ren = '1') then
-          s_slave_local_din <= v_register(to_integer(unsigned(s_slave_local_adress)));
+          s_slave_local_din <= v_register(slv_to_uint(s_slave_local_adress));
         end if;
       end if;
     end process WbSlaveLocalP;

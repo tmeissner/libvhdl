@@ -28,6 +28,8 @@ package UtilsP is
   function uint_to_slv (data: in natural; len : in positive) return std_logic_vector;
   function slv_to_uint (data: in std_logic_vector) return natural;
 
+  function uint_bitsize(data : in natural) return natural;
+
 
 end package UtilsP;
 
@@ -127,7 +129,7 @@ package body UtilsP is
 
   function uint_to_slv (data: in natural; len : in positive) return std_logic_vector is
   begin
-    assert len > integer(trunc(log2(real(data))))
+    assert len >= uint_bitsize(data)
       report "Warning: std_logic_vector result truncated"
       severity warning;
     return std_logic_vector(to_unsigned(data, len));
@@ -146,6 +148,24 @@ package body UtilsP is
     end if;
     return to_integer(unsigned(data));
   end function slv_to_uint;
+
+
+  function uint_bitsize(data : in natural) return natural is
+    variable v_nlz  : natural               := 0;
+    variable v_data : unsigned(30 downto 0) := to_unsigned(data, 31);
+  begin
+    if (data = 0) then
+      return 1;
+    end if;
+    for i in 30 downto 0 loop
+      if(v_data(i) /= '0') then
+        exit;
+      else
+        v_nlz := v_nlz + 1;
+      end if;
+    end loop;
+    return 31 - v_nlz;
+  end function uint_bitsize;
 
 
 end package body UtilsP;

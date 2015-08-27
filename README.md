@@ -31,6 +31,10 @@ Package with various implementations of queue types:
 * `t_simple_queue` simple array based FIFO queue
 * `t_list_queue` linked list FIFO queue using access types
 
+##### DictP
+Package with implementation of dictionary (aka associative array) type:
+
+* `t_dict` linked list dictionary using access types
 
 ## syn
 Synthesizable components for implementing in FPGA
@@ -64,17 +68,35 @@ Unit tests for SpiMasterE and SpiSlaveE components
 Unit tests for WishBoneMasterE and WishBoneSlaveE components
 
 
+## common
+Common utilities
+
+##### UtilsP
+Common functions useful for simulation/synthesis
+
+* `and_reduce(x)` returns and of all items in x, collapsed to one std_logic/boolean
+* `or_reduce(x)` returns or of all items in x, collapsed to one std_logic/boolean
+* `xor_reduce(x)` returns xor of items in x, collapsed to one std_logic
+* `even_parity(x)` returns even parity of x
+* `odd_parity(x)` returns odd parity of x
+* `count_ones(x)` returns number of '1' in x
+* `one_hot(x)` returns true if x is one-hot coded, false otherwise
+* `is_unknown(x)` returns true if x contains 'U' bit, false otherwise
+* `uint_to_slv(x, l)` returns std_logic_vector (unsigned) with length l converted from x (natural)
+* `slv_to_uint(x)` returns natural converted from x (std_logic_vector) (unsigned)
+* `uint_bitsize(x)` returns number of bits needed for given x (natural)
+
+
 ## Dependencies
 To run the tests, you have to install GHDL. You can get it from
 [http://sourceforge.net/projects/ghdl-updates/](http://sourceforge.net/projects/ghdl-updates/).
 
-Furthermore, you need the VHDL-2008 proposed packages because libvhdl uses various VHDL-2008 features. To get the needed files, you can use the get_vhdl_2008.sh script which downloads the files into the vhdl_2008 folder and patches the env_c.vhdl file to get in compiled with GHDL.
+If you use the 0.31 version of GHDL, you need the VHDL-2008 proposed packages because libvhdl uses various VHDL-2008 features. To get the needed files, you can use the get_vhdl_2008.sh script which downloads the files into the vhdl_2008 folder and patches the env_c.vhdl file to get in compiled with GHDL.
 
-If you another simulator with full VHDL-2008 support, you don't need these packages. Instead you have to outcomment
+If you build GHDL from actual source or use another simulator with VHDL-2008 support, you don't need these packages. Instead you have to outcomment
 the references to these packages from the source files.
 
-libvhdl also uses the OSVVM library to generate random data for the unit tests. We use version OSVVM version 2.1
-because of restrictions of the current GHDL release. You can find it under the osvvm_2.1 folder in the test/
+libvhdl also uses the OSVVM library to generate random data for the unit tests. We use version OSVVM version 2014.01. You can find it under the OSVVM folder in the test/
 directory. If you use another simulator with full OSVVM support, you can download newer versions of the library
 from [http://osvvm.org](http://osvvm.org).
 

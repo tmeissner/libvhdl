@@ -6,15 +6,23 @@ library ieee;
 package DictP is
 
 
+  type t_dict_dir   is (UP, DOWN);
+  type t_dict_error is (NO_ERROR, KEY_INVALID, KEY_NOT_FOUND);
+  type t_dict_key_ptr  is access string;
+
   type t_dict is protected
 
-    procedure set (key : in string; data : in std_logic_vector);
-    procedure get (key : in string; data : out std_logic_vector; err : out boolean);
-    procedure del (key : in string; err : out boolean);
+    procedure set (key : in string; data : in std_logic_vector; err : out t_dict_error);
+    procedure get (key : in string; data : out std_logic_vector; err : out t_dict_error);
+    procedure del (key : in string; err : out t_dict_error);
     procedure init (logging : in boolean := false);
-    procedure clear (err : out boolean);
+    procedure clear (err : out t_dict_error);
     impure function hasKey (key : string) return boolean;
     impure function size return natural;
+    procedure setFirst;
+    procedure setLast;
+    impure function  iter (dir : t_dict_dir := UP) return string;
+
 
   end protected t_dict;
 
@@ -32,54 +40,61 @@ package body DictP is
     type t_entry;
     type t_entry_ptr is access t_entry;
 
-    type t_key_ptr  is access string;
     type t_data_ptr is access std_logic_vector;
 
     type t_entry is record
-      key        : t_key_ptr;
+      key        : t_dict_key_ptr;
       data       : t_data_ptr;
       last_entry : t_entry_ptr;
       next_entry : t_entry_ptr;
     end record t_entry;
 
+    variable v_begin   : t_entry_ptr := null;
     variable v_head    : t_entry_ptr := null;
+    variable v_current : t_entry_ptr := null;
     variable v_size    : natural := 0;
     variable v_logging : boolean := false;
 
     impure function find (key : string) return t_entry_ptr;
 
-    procedure set (key : in string; data : in std_logic_vector) is
+    procedure set (key : in string; data : in std_logic_vector; err : out t_dict_error) is
       variable v_entry : t_entry_ptr := find(key);
     begin
-      if (v_entry = null) then
-        if (v_head /= null) then
-          v_entry                      := new t_entry;
-          v_entry.key                  := new string'(key);
-          v_entry.data                 := new std_logic_vector'(data);
-          v_entry.last_entry           := v_head;
-          v_entry.next_entry           := null;
-          v_head                       := v_entry;
-          v_head.last_entry.next_entry := v_head;
-        else
-          v_head            := new t_entry;
-          v_head.key        := new string'(key);
-          v_head.data       := new std_logic_vector'(data);
-          v_head.last_entry := null;
-          v_head.next_entry := null;
-        end if;
-        if (v_logging) then
-          report t_dict'instance_name & ": Add key " & key & " with data 0x" & to_hstring(data);
-        end if;
-        v_size := v_size + 1;
+      if (key = "") then
+        err := KEY_INVALID;
       else
-        v_entry.data.all := data;
-        if (v_logging) then
-          report t_dict'instance_name & ": Set key " & key & " to 0x" & to_hstring(data);
+        if (v_entry = null) then
+          if (v_head /= null) then
+            v_entry                      := new t_entry;
+            v_entry.key                  := new string'(key);
+            v_entry.data                 := new std_logic_vector'(data);
+            v_entry.last_entry           := v_head;
+            v_entry.next_entry           := null;
+            v_head                       := v_entry;
+            v_head.last_entry.next_entry := v_head;
+          else
+            v_head            := new t_entry;
+            v_head.key        := new string'(key);
+            v_head.data       := new std_logic_vector'(data);
+            v_head.last_entry := null;
+            v_head.next_entry := null;
+            v_begin           := v_head;
+          end if;
+          if (v_logging) then
+            report t_dict'instance_name & ": Add key " & key & " with data 0x" & to_hstring(data);
+          end if;
+          v_size := v_size + 1;
+        else
+          v_entry.data.all := data;
+          if (v_logging) then
+            report t_dict'instance_name & ": Set key " & key & " to 0x" & to_hstring(data);
+          end if;
         end if;
+        err := NO_ERROR;
       end if;
     end procedure set;
 
-    procedure get (key : in string; data : out std_logic_vector; err : out boolean) is
+    procedure get (key : in string; data : out std_logic_vector; err : out t_dict_error) is
       variable v_entry : t_entry_ptr := find(key);
     begin
       if(v_entry /= null) then
@@ -87,13 +102,13 @@ package body DictP is
         if v_logging then
           report t_dict'instance_name & ": Got key " & key & " with data 0x" & to_hstring(v_entry.data.all);
         end if;
-        err := false;
+        err := NO_ERROR;
       else
-        err := true;
+        err := KEY_NOT_FOUND;
       end if;
     end procedure get;
 
-    procedure del (key : in string; err : out boolean) is
+    procedure del (key : in string; err : out t_dict_error) is
       variable v_entry : t_entry_ptr := find(key);
     begin
       if (v_entry /= null) then
@@ -104,7 +119,8 @@ package body DictP is
         -- remove start entry
         elsif(v_entry.next_entry /= null and v_entry.last_entry = null) then
           v_entry.next_entry.last_entry := null;
-          v_entry.next_entry.last_entry := v_entry.last_entry;
+          --v_entry.next_entry.last_entry := v_entry.last_entry;
+          v_begin                       := v_entry.next_entry;
         -- remove from between
         elsif(v_entry.next_entry /= null and v_entry.last_entry /= null) then
           v_entry.last_entry.next_entry := v_entry.next_entry;
@@ -114,9 +130,9 @@ package body DictP is
         deallocate(v_entry.data);
         deallocate(v_entry);
         v_size := v_size - 1;
-        err := false;
+        err := NO_ERROR;
       else
-        err := true;
+        err := KEY_NOT_FOUND;
       end if;
     end procedure del;
 
@@ -132,22 +148,22 @@ package body DictP is
       return null;
     end function find;
 
-    procedure clear (err : out boolean) is
+    procedure clear (err : out t_dict_error) is
       variable v_entry   : t_entry_ptr := v_head;
       variable v_entry_d : t_entry_ptr;
-      variable v_err     : boolean;
+      variable v_err     : t_dict_error;
     begin
-      err := false;
       while (v_entry /= null) loop
         v_entry_d := v_entry;
         del(v_entry_d.key.all, v_err);
-        if v_err then
-          err := true;
+        if (v_err /= NO_ERROR) then
+          err := v_err;
           return;
         else
           v_entry := v_entry.last_entry;
         end if;
       end loop;
+      err := NO_ERROR;
     end procedure clear;
 
     impure function hasKey (key : string) return boolean is
@@ -164,6 +180,32 @@ package body DictP is
     begin
       v_logging := logging;
     end procedure init;
+
+    procedure setFirst is
+    begin
+      v_current := v_begin;
+    end procedure setFirst;
+
+    procedure setLast is
+    begin
+      v_current := v_head;
+    end procedure setLast;
+
+    impure function iter (dir : t_dict_dir := UP) return string is
+      variable v_key : t_dict_key_ptr := null;
+    begin
+      if (v_current /= null) then
+        v_key := new string'(v_current.key.all);
+        if (dir = UP) then
+          v_current := v_current.next_entry;
+        else
+          v_current := v_current.last_entry;
+        end if;
+        return v_key.all;
+      else
+        return "";
+      end if;
+    end function iter;
 
 
   end protected body t_dict;

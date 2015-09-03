@@ -8,7 +8,9 @@ package DictP is
 
   type t_dict_dir   is (UP, DOWN);
   type t_dict_error is (NO_ERROR, KEY_INVALID, KEY_NOT_FOUND);
+
   type t_dict_key_ptr  is access string;
+  type t_dict_data_ptr is access std_logic_vector;
 
   type t_dict is protected
 
@@ -21,10 +23,12 @@ package DictP is
     impure function size return natural;
     procedure setFirst;
     procedure setLast;
-    impure function  iter (dir : t_dict_dir := UP) return string;
-
+    impure function iter (dir : t_dict_dir := UP) return string;
+    impure function get(key : string) return std_logic_vector;
 
   end protected t_dict;
+
+  procedure merge(d0 : inout t_dict; d1 : inout t_dict; d : inout t_dict);
 
 
 end package DictP;
@@ -40,20 +44,18 @@ package body DictP is
     type t_entry;
     type t_entry_ptr is access t_entry;
 
-    type t_data_ptr is access std_logic_vector;
-
     type t_entry is record
       key        : t_dict_key_ptr;
-      data       : t_data_ptr;
+      data       : t_dict_data_ptr;
       last_entry : t_entry_ptr;
       next_entry : t_entry_ptr;
     end record t_entry;
 
-    variable v_begin   : t_entry_ptr := null;
-    variable v_head    : t_entry_ptr := null;
-    variable v_current : t_entry_ptr := null;
-    variable v_size    : natural := 0;
-    variable v_logging : boolean := false;
+    variable v_tail     : t_entry_ptr := null;
+    variable v_head     : t_entry_ptr := null;
+    variable v_iterator : t_entry_ptr := null;
+    variable v_size     : natural := 0;
+    variable v_logging  : boolean := false;
 
     impure function find (key : string) return t_entry_ptr;
 
@@ -78,7 +80,7 @@ package body DictP is
             v_head.data       := new std_logic_vector'(data);
             v_head.last_entry := null;
             v_head.next_entry := null;
-            v_begin           := v_head;
+            v_tail           := v_head;
           end if;
           if (v_logging) then
             report t_dict'instance_name & ": Add key " & key & " with data 0x" & to_hstring(data);
@@ -120,7 +122,7 @@ package body DictP is
         elsif(v_entry.next_entry /= null and v_entry.last_entry = null) then
           v_entry.next_entry.last_entry := null;
           --v_entry.next_entry.last_entry := v_entry.last_entry;
-          v_begin                       := v_entry.next_entry;
+          v_tail                       := v_entry.next_entry;
         -- remove from between
         elsif(v_entry.next_entry /= null and v_entry.last_entry /= null) then
           v_entry.last_entry.next_entry := v_entry.next_entry;
@@ -183,23 +185,23 @@ package body DictP is
 
     procedure setFirst is
     begin
-      v_current := v_begin;
+      v_iterator := v_tail;
     end procedure setFirst;
 
     procedure setLast is
     begin
-      v_current := v_head;
+      v_iterator := v_head;
     end procedure setLast;
 
     impure function iter (dir : t_dict_dir := UP) return string is
       variable v_key : t_dict_key_ptr := null;
     begin
-      if (v_current /= null) then
-        v_key := new string'(v_current.key.all);
+      if (v_iterator /= null) then
+        v_key := new string'(v_iterator.key.all);
         if (dir = UP) then
-          v_current := v_current.next_entry;
+          v_iterator := v_iterator.next_entry;
         else
-          v_current := v_current.last_entry;
+          v_iterator := v_iterator.last_entry;
         end if;
         return v_key.all;
       else
@@ -207,8 +209,41 @@ package body DictP is
       end if;
     end function iter;
 
+    impure function get(key : string) return std_logic_vector is
+      variable v_entry : t_entry_ptr := find(key);
+    begin
+      assert v_entry /= null
+        report t_dict'instance_name & ": ERROR: key " & key & " not found"
+        severity failure;
+      return v_entry.data.all;
+    end function get;
+
 
   end protected body t_dict;
+
+
+  procedure merge(d0 : inout t_dict; d1 : inout t_dict; d : inout t_dict) is
+    variable v_key   : t_dict_key_ptr;
+    variable v_data  : t_dict_data_ptr;
+    variable v_error : t_dict_error;
+  begin
+    if (d0.size > 0) then
+      d0.setFirst;
+      for i in 0 to d0.size-1 loop
+        v_key  := new string'(d0.iter(UP));
+        v_data := new std_logic_vector'(d0.get(v_key.all));
+        d.set(v_key.all, v_data.all, v_error);
+      end loop;
+    end if;
+    if (d1.size > 0) then
+      d1.setFirst;
+      for i in 0 to d1.size-1 loop
+        v_key  := new string'(d1.iter(UP));
+        v_data := new std_logic_vector'(d1.get(v_key.all));
+        d.set(v_key.all, v_data.all, v_error);
+      end loop;
+    end if;
+  end procedure merge;
 
 
 end package body DictP;

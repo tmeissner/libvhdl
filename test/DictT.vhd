@@ -29,6 +29,8 @@ architecture sim of DictT is
   type t_scoreboard is array (natural range <>) of std_logic_vector(7 downto 0);
 
   shared variable sv_dict : t_dict;
+  shared variable sv_dact : t_dict;
+  shared variable sv_duct : t_dict;
 
 
 begin
@@ -37,16 +39,18 @@ begin
   DictInitP : process is
   begin
     sv_dict.init(false);
+    sv_dact.init(false);
+    sv_duct.init(false);
     wait;
   end process DictInitP;
 
 
   DictTestP : process is
-    variable v_key    : t_dict_key_ptr;
-    variable v_random : RandomPType;
-    variable v_input  : std_logic_vector(7 downto 0);
-    variable v_output : std_logic_vector(7 downto 0);
-    variable v_scoreboard : t_scoreboard(0 to 256);
+    variable v_key        : t_dict_key_ptr;
+    variable v_random     : RandomPType;
+    variable v_input      : std_logic_vector(7 downto 0);
+    variable v_output     : std_logic_vector(7 downto 0);
+    variable v_scoreboard : t_scoreboard(0 to 511);
     variable v_error      : t_dict_error;
   begin
     v_random.InitSeed(v_random'instance_name);
@@ -148,8 +152,30 @@ begin
     deallocate(v_key);
     report "INFO: Test successful";
 
+    -- merge 2 dictionaries
+    -- fill dictionary and check count
+    report "INFO: Test 7: Merge dictionaries";
+    for i in 256 to 511 loop
+      v_input := v_random.RandSlv(8);
+      sv_dact.set(integer'image(i), v_input, v_error);
+      v_scoreboard(i) := v_input;
+      assert sv_dact.size = i-255
+        report "ERROR: Dict should have " & to_string(i-255) & " entries"
+        severity failure;
+    end loop;
+    -- merge dictionaries
+    merge(sv_dict, sv_dact, sv_duct);
+    -- read all entries and check for correct data
+    for i in 0 to 511 loop
+      sv_duct.get(integer'image(i), v_output, v_error);
+      assert v_output = v_scoreboard(i)
+        report "ERROR: Got 0x" & to_hstring(v_output) & ", expected 0x" & to_hstring(v_scoreboard(i))
+        severity failure;
+    end loop;
+    report "INFO: Test successful";
+
     -- Remove key/value pair from head of dictionary
-    report "INFO: Test 7: Removing entry from head of dictionary";
+    report "INFO: Test 8: Removing entry from head of dictionary";
     sv_dict.del("255", v_error);
     assert not(sv_dict.hasKey("255"))
       report "ERROR: Key 255 shouldn't exist in dictionary"
@@ -157,7 +183,7 @@ begin
     report "INFO: Test successful";
 
     -- Remove key/value pair from head of dictionary
-    report "INFO: Test 8: Removing entry from middle of dictionary";
+    report "INFO: Test 9: Removing entry from middle of dictionary";
     sv_dict.del("127", v_error);
     assert not(sv_dict.hasKey("127"))
       report "ERROR: Key 127 shouldn't exist in dictionary"
@@ -165,7 +191,7 @@ begin
     report "INFO: Test successful";
 
     -- Remove key/value pair from head of dictionary
-    report "INFO: Test 9: Removing entry from beginning of dictionary";
+    report "INFO: Test 10: Removing entry from beginning of dictionary";
     sv_dict.del("0", v_error);
     assert not(sv_dict.hasKey("0"))
       report "ERROR: Key 0 shouldn't exist in dictionary"
@@ -173,7 +199,7 @@ begin
     report "INFO: Test successful";
 
     -- Remove key/value pair from head of dictionary
-    report "INFO: Test 10: Clear all entries from dictionary";
+    report "INFO: Test 11: Clear all entries from dictionary";
     sv_dict.clear(v_error);
     assert sv_dict.size = 0
       report "ERROR: Dict should be empty"

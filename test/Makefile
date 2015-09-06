@@ -6,7 +6,7 @@ VHD_STD := 08
 
 
 .PHONY: all
-all: queue dict sim wishbone
+all: queue dict stack sim wishbone
 
 
 .PHONY: vhdl2008
@@ -41,6 +41,9 @@ dictt: RandomPkg.o DictP.o DictT.vhd
 	ghdl -a --std=$(VHD_STD) DictT.vhd
 	ghdl -e --std=$(VHD_STD) $@
 
+stackt: RandomPkg.o AssertP.o StackP.o StackT.vhd
+	ghdl -a --std=$(VHD_STD) StackT.vhd
+	ghdl -e --std=$(VHD_STD) $@
 
 simt: RandomPkg.o UtilsP.o AssertP.o QueueP.o SimP.o SimT.vhd
 	ghdl -a --std=$(VHD_STD) SimT.vhd
@@ -79,6 +82,7 @@ clean:
 	rm -f *.ghw
 	rm -f queuet
 	rm -f dictt
+	rm -f stackt
 	rm -f stringt
 	rm -f simt
 	rm -f spit

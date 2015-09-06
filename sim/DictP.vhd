@@ -15,16 +15,16 @@ package DictP is
 
   type t_dict is protected
 
-    procedure set (key : in string; data : in std_logic_vector; err : out t_dict_error);
-    procedure get (key : in string; data : out std_logic_vector; err : out t_dict_error);
-    procedure del (key : in string; err : out t_dict_error);
-    procedure init (logging : in boolean := false);
+    procedure set (constant key : in string; constant data : in std_logic_vector; err : out t_dict_error);
+    procedure get (constant key : in string; data : out std_logic_vector; err : out t_dict_error);
+    procedure del (constant key : in string; err : out t_dict_error);
+    procedure init (constant logging : in boolean := false);
     procedure clear (err : out t_dict_error);
-    impure function hasKey (key : string) return boolean;
+    impure function hasKey (constant key : string) return boolean;
     impure function size return natural;
-    impure function iter (dir : t_dict_dir := UP) return string;
-    impure function get(key : string) return std_logic_vector;
     procedure setIter(constant start : in t_dict_iter := TAIL);
+    impure function iter (constant dir : t_dict_dir := UP) return string;
+    impure function get (constant key : string) return std_logic_vector;
 
   end protected t_dict;
 
@@ -57,9 +57,9 @@ package body DictP is
     variable v_size     : natural := 0;
     variable v_logging  : boolean := false;
 
-    impure function find (key : string) return t_entry_ptr;
+    impure function find (constant key : string) return t_entry_ptr;
 
-    procedure set (key : in string; data : in std_logic_vector; err : out t_dict_error) is
+    procedure set (constant key : in string; constant data : in std_logic_vector; err : out t_dict_error) is
       variable v_entry : t_entry_ptr := find(key);
     begin
       if (key = "") then
@@ -96,7 +96,7 @@ package body DictP is
       end if;
     end procedure set;
 
-    procedure get (key : in string; data : out std_logic_vector; err : out t_dict_error) is
+    procedure get (constant key : in string; data : out std_logic_vector; err : out t_dict_error) is
       variable v_entry : t_entry_ptr := find(key);
     begin
       if(v_entry /= null) then
@@ -110,7 +110,7 @@ package body DictP is
       end if;
     end procedure get;
 
-    procedure del (key : in string; err : out t_dict_error) is
+    procedure del (constant key : in string; err : out t_dict_error) is
       variable v_entry : t_entry_ptr := find(key);
     begin
       if (v_entry /= null) then
@@ -138,7 +138,7 @@ package body DictP is
       end if;
     end procedure del;
 
-    impure function find (key : string) return t_entry_ptr is
+    impure function find (constant key : string) return t_entry_ptr is
       variable v_entry : t_entry_ptr := v_head;
     begin
       while (v_entry /= null) loop
@@ -168,7 +168,7 @@ package body DictP is
       err := NO_ERROR;
     end procedure clear;
 
-    impure function hasKey (key : string) return boolean is
+    impure function hasKey (constant key : string) return boolean is
     begin
       return find(key) /= null;
     end function hasKey;
@@ -178,7 +178,7 @@ package body DictP is
       return v_size;
     end function size;
 
-    procedure init (logging : in boolean := false) is
+    procedure init (constant logging : in boolean := false) is
     begin
       v_logging := logging;
     end procedure init;
@@ -192,7 +192,7 @@ package body DictP is
       end if;
     end procedure setIter;
 
-    impure function iter (dir : t_dict_dir := UP) return string is
+    impure function iter (constant dir : t_dict_dir := UP) return string is
       variable v_key : t_dict_key_ptr := null;
     begin
       if (v_iterator /= null) then
@@ -208,7 +208,7 @@ package body DictP is
       end if;
     end function iter;
 
-    impure function get(key : string) return std_logic_vector is
+    impure function get(constant key : string) return std_logic_vector is
       variable v_entry : t_entry_ptr := find(key);
     begin
       assert v_entry /= null
@@ -221,7 +221,7 @@ package body DictP is
   end protected body t_dict;
 
 
-  procedure merge(d0 : inout t_dict; d1 : inout t_dict; d : inout t_dict) is
+  procedure merge(d0 : inout t_dict; d1 : inout t_dict; d : inout t_dict; err : out t_dict_error) is
     variable v_key   : t_dict_key_ptr;
     variable v_data  : t_dict_data_ptr;
     variable v_error : t_dict_error;

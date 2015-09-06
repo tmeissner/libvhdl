@@ -115,7 +115,7 @@ begin
 
     -- iterate up over all entries
     report "INFO: Test 5: Iterate up over all entries";
-    sv_dict.setFirst;
+    sv_dict.setIter;
     for i in 0 to 255 loop
       v_key := new string'(sv_dict.iter(UP));
       assert v_key.all = integer'image(i)
@@ -134,7 +134,7 @@ begin
 
     -- iterate down over all entries
     report "INFO: Test 6: Iterate down over all entries";
-    sv_dict.setLast;
+    sv_dict.setIter(HEAD);
     for i in 255 downto 0 loop
       v_key := new string'(sv_dict.iter(DOWN));
       assert v_key.all = integer'image(i)
@@ -164,7 +164,7 @@ begin
         severity failure;
     end loop;
     -- merge dictionaries
-    merge(sv_dict, sv_dact, sv_duct);
+    merge(sv_dict, sv_dact, sv_duct, v_error);
     -- read all entries and check for correct data
     for i in 0 to 511 loop
       sv_duct.get(integer'image(i), v_output, v_error);

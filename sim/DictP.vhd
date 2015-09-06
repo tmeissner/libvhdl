@@ -8,6 +8,7 @@ package DictP is
 
   type t_dict_dir   is (UP, DOWN);
   type t_dict_error is (NO_ERROR, KEY_INVALID, KEY_NOT_FOUND);
+  type t_dict_iter  is (TAIL, HEAD);
 
   type t_dict_key_ptr  is access string;
   type t_dict_data_ptr is access std_logic_vector;
@@ -21,14 +22,13 @@ package DictP is
     procedure clear (err : out t_dict_error);
     impure function hasKey (key : string) return boolean;
     impure function size return natural;
-    procedure setFirst;
-    procedure setLast;
     impure function iter (dir : t_dict_dir := UP) return string;
     impure function get(key : string) return std_logic_vector;
+    procedure setIter(constant start : in t_dict_iter := TAIL);
 
   end protected t_dict;
 
-  procedure merge(d0 : inout t_dict; d1 : inout t_dict; d : inout t_dict);
+  procedure merge(d0 : inout t_dict; d1 : inout t_dict; d : inout t_dict; err : out t_dict_error);
 
 
 end package DictP;
@@ -183,15 +183,14 @@ package body DictP is
       v_logging := logging;
     end procedure init;
 
-    procedure setFirst is
+    procedure setIter (constant start : in t_dict_iter := TAIL) is
     begin
-      v_iterator := v_tail;
-    end procedure setFirst;
-
-    procedure setLast is
-    begin
-      v_iterator := v_head;
-    end procedure setLast;
+      if (start = TAIL) then
+        v_iterator := v_tail;
+      else
+        v_iterator := v_head;
+      end if;
+    end procedure setIter;
 
     impure function iter (dir : t_dict_dir := UP) return string is
       variable v_key : t_dict_key_ptr := null;
@@ -228,19 +227,27 @@ package body DictP is
     variable v_error : t_dict_error;
   begin
     if (d0.size > 0) then
-      d0.setFirst;
+      d0.setIter(TAIL);
       for i in 0 to d0.size-1 loop
         v_key  := new string'(d0.iter(UP));
         v_data := new std_logic_vector'(d0.get(v_key.all));
         d.set(v_key.all, v_data.all, v_error);
+        if (v_error /= NO_ERROR) then
+          err := v_error;
+          return;
+        end if;
       end loop;
     end if;
     if (d1.size > 0) then
-      d1.setFirst;
+      d1.setIter(TAIL);
       for i in 0 to d1.size-1 loop
         v_key  := new string'(d1.iter(UP));
         v_data := new std_logic_vector'(d1.get(v_key.all));
         d.set(v_key.all, v_data.all, v_error);
+        if (v_error /= NO_ERROR) then
+          err := v_error;
+          return;
+        end if;
       end loop;
     end if;
   end procedure merge;

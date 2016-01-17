@@ -12,11 +12,13 @@ library ieee;
 
 library osvvm;
   use osvvm.RandomPkg.all;
+  use osvvm.CoveragePkg.all;
 
 library libvhdl;
   use libvhdl.AssertP.all;
   use libvhdl.SimP.all;
   use libvhdl.QueueP.all;
+  use libvhdl.DictP.all;
   use libvhdl.UtilsP.all;
 
 
@@ -129,6 +131,8 @@ architecture sim of WishBoneT is
   type t_register is array (0 to integer'(2**C_ADDRESS_WIDTH-1)) of std_logic_vector(C_DATA_WIDTH-1 downto 0);
 
   shared variable sv_wishbone_queue : t_list_queue;
+  shared variable sv_wishbone_dict  : t_dict;
+  shared variable sv_coverage       : CovPType;
 
 
 begin
@@ -143,13 +147,17 @@ begin
   QueueInitP : process is
   begin
     sv_wishbone_queue.init(2**C_ADDRESS_WIDTH);
+    sv_wishbone_dict.init(false);
     wait;
   end process QueueInitP;
 
 
   WbMasterLocalP : process is
-    variable v_random : RandomPType;
-    variable v_wbmaster_data : std_logic_vector(C_DATA_WIDTH-1 downto 0);
+    variable v_random           : RandomPType;
+    variable v_wbmaster_address : integer;
+    variable v_master_local_adress : std_logic_vector(C_ADDRESS_WIDTH-1 downto 0);
+    variable v_wbmaster_data    : std_logic_vector(C_DATA_WIDTH-1 downto 0);
+    variable v_error            : t_dict_error;
   begin
     v_random.InitSeed(v_random'instance_name);
     v_wbmaster_data       := (others => '0');
@@ -159,30 +167,45 @@ begin
     s_master_local_ren    <= '0';
     wait until s_wb_reset = '0';
     -- write the wishbone slave registers
-    for i in 0 to integer'(2**C_ADDRESS_WIDTH-1) loop
+    sv_coverage.AddBins(GenBin(0));
+    sv_coverage.AddBins(GenBin(integer'(2**C_ADDRESS_WIDTH-1)));
+    sv_coverage.AddBins(GenBin(1, integer'(2**C_ADDRESS_WIDTH-2), 64));
+    while not sv_coverage.IsCovered loop
+      v_wbmaster_address    := sv_coverage.RandCovPoint;
       v_wbmaster_data       := v_random.RandSlv(C_DATA_WIDTH);
       s_master_local_din    <= v_wbmaster_data;
-      s_master_local_adress <= uint_to_slv(i, C_ADDRESS_WIDTH);
+      s_master_local_adress <= uint_to_slv(v_wbmaster_address, C_ADDRESS_WIDTH);
       s_master_local_wen    <= '1';
       wait until rising_edge(s_wb_clk);
       s_master_local_din    <= (others => '0');
       s_master_local_adress <= (others => '0');
       s_master_local_wen    <= '0';
       wait until rising_edge(s_wb_clk) and s_master_local_ack = '1';
-      sv_wishbone_queue.push(v_wbmaster_data);
+      sv_wishbone_queue.push(uint_to_slv(v_wbmaster_address, C_ADDRESS_WIDTH));
+      sv_wishbone_dict.set(integer'image(v_wbmaster_address), v_wbmaster_data, v_error);
+      assert v_error = NO_ERROR
+        report "ERROR: key error"
+        severity failure;
+      sv_coverage.ICover(v_wbmaster_address);
     end loop;
     -- read back and check the wishbone slave registers
-    for i in 0 to integer'(2**C_ADDRESS_WIDTH-1) loop
-      s_master_local_adress <= uint_to_slv(i, C_ADDRESS_WIDTH);
+    while not(sv_wishbone_queue.is_empty) loop
+      sv_wishbone_queue.pop(v_master_local_adress);
+      s_master_local_adress <= v_master_local_adress;
       s_master_local_ren    <= '1';
       wait until rising_edge(s_wb_clk);
       s_master_local_adress <= (others => '0');
       s_master_local_ren    <= '0';
       wait until rising_edge(s_wb_clk) and s_master_local_ack = '1';
-      sv_wishbone_queue.pop(v_wbmaster_data);
+      sv_wishbone_dict.get(integer'image(slv_to_uint(v_master_local_adress)), v_wbmaster_data, v_error);
+      assert v_error = NO_ERROR
+        report "ERROR: key error"
+        severity failure;
       assert_equal(s_master_local_dout, v_wbmaster_data);
     end loop;
     report "INFO: Test successfully finished!";
+    sv_coverage.SetMessage("WishboneT coverage results");
+    sv_coverage.WriteBin;
     s_test_done <= true;
     wait;
   end process WbMasterLocalP;

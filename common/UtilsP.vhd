@@ -38,13 +38,12 @@ package body UtilsP is
 
 
   function and_reduce (data : in std_logic_vector) return std_logic is
+    variable v_return : std_logic := '1';
   begin
     for i in data'range loop
-      if data(i) = '0' then
-        return '0';
-      end if;
+      v_return := v_return and data(i);
     end loop;
-    return '1';
+    return v_return;
   end function and_reduce;
 
   function and_reduce (data : in boolean_vector) return boolean is
@@ -59,13 +58,12 @@ package body UtilsP is
 
 
   function or_reduce (data : in std_logic_vector) return std_logic is
+     variable v_return : std_logic := '0';
   begin
     for i in data'range loop
-      if data(i) = '1' then
-        return '1';
-      end if;
+      v_return := v_return or data(i);
     end loop;
-    return '0';
+    return v_return;
   end function or_reduce;
 
   function or_reduce (data : in boolean_vector) return boolean is

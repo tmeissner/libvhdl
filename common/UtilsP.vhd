@@ -102,7 +102,9 @@ package body UtilsP is
     variable v_return : natural := 0;
   begin
     for i in data'range loop
-      v_return := v_return + 1;
+      if (to_ux01(data(i)) = '1') then
+        v_return := v_return + 1;
+      end if;
     end loop;
     return v_return;
   end function count_ones;
@@ -117,7 +119,7 @@ package body UtilsP is
   function is_unknown (data : in std_logic_vector) return boolean is
   begin
     for i in data'range loop
-      if (data(i) = 'U') then
+      if (to_ux01(data(i)) = 'U') then
         return true;
       end if;
     end loop;

@@ -203,6 +203,15 @@ begin
         severity failure;
       assert_equal(s_master_local_dout, v_wbmaster_data);
     end loop;
+    -- test local write & read at the same time
+    wait until rising_edge(s_wb_clk);
+    s_master_local_wen    <= '1';
+    s_master_local_ren    <= '1';
+    wait until rising_edge(s_wb_clk);
+    s_master_local_wen    <= '0';
+    s_master_local_ren    <= '0';
+    wait until rising_edge(s_wb_clk);
+    -- Test finished
     report "INFO: Test successfully finished!";
     sv_coverage.SetMessage("WishboneT coverage results");
     sv_coverage.WriteBin;
@@ -244,18 +253,25 @@ begin
     WishBoneBusMonitorP : process is
       variable v_master_local_adress : std_logic_vector(C_ADDRESS_WIDTH-1 downto 0);
       variable v_master_local_data   : std_logic_vector(C_DATA_WIDTH-1 downto 0);
+      variable v_valid_access        : std_logic;
     begin
-      wait until s_master_local_wen = '1';
+      wait until (s_master_local_wen = '1' or s_master_local_ren = '1') and rising_edge(s_wb_clk);
       v_master_local_adress := s_master_local_adress;
       v_master_local_data   := s_master_local_din;
-      wait until s_wb_cyc = '1';
-      WB_ADDR : assert s_wb_adr = v_master_local_adress
-        report "ERROR: Wishbone address 0x" & to_hstring(s_wb_adr) & " differ from local address 0x" & to_hstring(v_master_local_adress)
+      v_valid_access        := s_master_local_wen  xor s_master_local_ren;
+      wait until rising_edge(s_wb_clk);
+      WB_CYC : assert v_valid_access = s_wb_cyc
+        report "ERROR: Wishbone cycle should be 0b" & to_string(v_valid_access) & " instead of 0b" & to_string(s_wb_cyc)
         severity failure;
-      if (s_wb_we = '1') then
-        WB_DATA : assert s_wb_master_data = v_master_local_data
-          report "ERROR: Wishbone data 0x" & to_hstring(s_wb_master_data) & " differ from local data 0x" & to_hstring(v_master_local_data)
+      if (v_valid_access = '1') then
+        WB_ADDR : assert s_wb_adr = v_master_local_adress
+          report "ERROR: Wishbone address 0x" & to_hstring(s_wb_adr) & " differ from local address 0x" & to_hstring(v_master_local_adress)
           severity failure;
+        if (s_wb_we = '1') then
+          WB_DATA : assert s_wb_master_data = v_master_local_data
+            report "ERROR: Wishbone data 0x" & to_hstring(s_wb_master_data) & " differ from local data 0x" & to_hstring(v_master_local_data)
+            severity failure;
+        end if;
       end if;
     end process WishBoneBusMonitorP;
 

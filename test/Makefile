@@ -88,6 +88,7 @@ clean:
 	rm -f simt
 	rm -f spit
 	rm -f wishbonet
+	rm -f *.json
 
 .PHONY: distclean
 distclean: clean

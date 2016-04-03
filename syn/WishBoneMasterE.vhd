@@ -57,7 +57,7 @@ begin
         WbReadC : case s_wb_master_fsm is
 
           when IDLE =>
-            if (LocalWen_i = '1' or LocalRen_i = '1') then
+            if ((LocalWen_i xor LocalRen_i) = '1') then
               s_wb_master_fsm <= ADDRESS;
             end if;
 
@@ -103,7 +103,7 @@ begin
         s_wb_wen <= '0';
       else
         if (s_wb_master_fsm = IDLE) then
-          if (LocalWen_i = '1' or LocalRen_i = '1') then
+          if ((LocalWen_i xor LocalRen_i) = '1') then
             WbAdr_o  <= LocalAdress_i;
             s_wb_wen <= LocalWen_i;
           end if;
@@ -117,16 +117,40 @@ begin
 
 
   -- psl default clock is rising_edge(WbClk_i);
+
+  -- PSL assert directives
+
+  -- psl RESET : assert always
+  --   WbRst_i ->
+  --    WbCyc_o = '0' and WbStb_o = '0' and WbWe_o = '0' and
+  --    to_integer(unsigned(WbAdr_o)) = 0 and to_integer(unsigned(WbDat_o)) = 0 and
+  --    LocalAck_o = '0' and LocalError_o = '0' and to_integer(unsigned(LocalData_o)) = 0
+  --   report "WB master: Reset error";
   --
   -- psl WB_WRITE : assert always
-  --   ((not(WbCyc_o) and not(WbStb_o) and LocalWen_i) ->
+  --   ((not(WbCyc_o) and not(WbStb_o) and LocalWen_i and not (LocalRen_i)) ->
   --    next (WbCyc_o = '1' and WbStb_o = '1' and WbWe_o = '1')) abort WbRst_i
-  --   report "PSL ERROR: Wishbone write error";
+  --   report "WB master: Write error";
   --
   -- psl WB_READ : assert always
-  --   ((not(WbCyc_o) and not(WbStb_o) and LocalRen_i) |->
+  --   ((not(WbCyc_o) and not(WbStb_o) and LocalRen_i and not(LocalWen_i)) |->
   --    next (WbCyc_o = '1' and WbStb_o = '1' and WbWe_o = '0')) abort WbRst_i
-  --   report "PSL ERROR: Wishbone read error";
+  --   report "WB master: Read error";
+
+
+  -- PSL cover directives
+
+  -- psl COVER_LOCAL_WRITE : cover {s_wb_master_fsm = IDLE and LocalWen_i = '1' and
+  --   LocalRen_i = '0' and WbRst_i = '0'}
+  --  report "WB master: Local write";
+  --
+  -- psl COVER_LOCAL_READ : cover {s_wb_master_fsm = IDLE and LocalRen_i = '1' and
+  --   LocalWen_i = '0' and WbRst_i = '0'}
+  --  report "WB master: Local read";
+  --
+  -- psl COVER_LOCAL_WRITE_READ : cover {s_wb_master_fsm = IDLE and LocalWen_i = '1' and
+  --   LocalRen_i = '1' and WbRst_i = '0'}
+  --  report "WB master: Local write & read";
 
 
 end architecture rtl;

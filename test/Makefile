@@ -68,7 +68,7 @@ wishbonet: RandomPkg.o CoveragePkg.o AssertP.o SimP.o QueueP.o DictP.o UtilsP.o 
 
 .PHONY: wishbone
 wishbone: wishbonet
-	ghdl -r --std=$(VHD_STD) $@t --wave=$@t.ghw
+	ghdl -r --std=$(VHD_STD) $@t --wave=$@t.ghw --psl-report=$@_psl_coverage.json
 
 
 # Default rule for running simulation

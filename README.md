@@ -1,12 +1,12 @@
 # libvhdl
-A OHDL licensed library of reusable components for VHDL designs and testbenches
+A LGPL3 licensed library of reusable components for VHDL designs and testbenches
 
 
 ##sim
 (Non) synthesible components for testbenches
 
-##### AssertP
-Package with various assertion procedures.
+##### AssertP (Deprecated, better use Alerts from OSVVM instead)
+Package with various assertion procedures. 
 
 * `assert_true(x[, str, level])` checks if boolean x = false
 * `assert_false(x[, str, level])` checks if boolean x = false

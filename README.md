@@ -1,6 +1,8 @@
 # libvhdl
-A LGPL3 licensed library of reusable components for VHDL designs and testbenches
+A LGPL3 licensed library of reusable components for VHDL designs and testbenches.
 
+The intention of this library is not to realize the most optimized and highest performing code.
+Instead it serves more as an example how to implement various things in VHDL and test them efficiently.
 
 ##sim
 (Non) synthesible components for testbenches

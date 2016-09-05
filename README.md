@@ -5,7 +5,7 @@ The intention of this library is not to realize the most optimized and highest p
 Instead it serves more as an example how to implement various things in VHDL and test them efficiently.
 
 ##sim
-(Non) synthesible components for testbenches
+(Non-)synthesizable components for testbenches
 
 ##### AssertP (Deprecated, better use Alerts from OSVVM instead)
 Package with various assertion procedures. 

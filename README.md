@@ -34,7 +34,7 @@ Package with various implementations of queue types:
 * `t_list_queue` linked list FIFO queue using access types
 
 ##### DictP
-Package with implementation of dictionary (aka associative array) type:
+Generic package with implementation of dictionary (aka associative array) type:
 
 * `t_dict` linked list dictionary using access types
 
@@ -91,14 +91,9 @@ Common functions useful for simulation/synthesis
 
 ## Dependencies
 To run the tests, you have to install GHDL. You can get it from
-[http://sourceforge.net/projects/ghdl-updates/](http://sourceforge.net/projects/ghdl-updates/).
+[https://github.com/tgingold/ghdl/](https://github.com/tgingold/ghdl/). Your GHDL version should not be too old, because libvhdl needs VHDL-2008 support. So, it's best to get the latest stable release or build from latest sources. 
 
-If you use the 0.31 version of GHDL, you need the VHDL-2008 proposed packages because libvhdl uses various VHDL-2008 features. To get the needed files, you can use the get_vhdl_2008.sh script which downloads the files into the vhdl_2008 folder and patches the env_c.vhdl file to get in compiled with GHDL.
-
-If you build GHDL from actual source or use another simulator with VHDL-2008 support, you don't need these packages. Instead you have to outcomment
-the references to these packages from the source files.
-
-libvhdl also uses the OSVVM library to generate random data for the unit tests. We use version OSVVM version 2014.01. You can find it under the OSVVM folder in the test/
+libvhdl uses the OSVVM library to generate random data for the unit tests. We use version OSVVM version 2014.01. You can find it under the OSVVM folder in the test/
 directory. If you use another simulator with full OSVVM support, you can download newer versions of the library
 from [http://osvvm.org](http://osvvm.org).
 

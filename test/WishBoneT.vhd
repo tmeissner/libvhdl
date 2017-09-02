@@ -2,14 +2,6 @@ library ieee;
   use ieee.std_logic_1164.all;
   use ieee.numeric_std.all;
 
---+ including vhdl 2008 libraries
---+ These lines can be commented out when using
---+ a simulator with built-in VHDL 2008 support
---library ieee_proposed;
---  use ieee_proposed.standard_additions.all;
---  use ieee_proposed.std_logic_1164_additions.all;
---  use ieee_proposed.numeric_std_additions.all;
-
 library osvvm;
   use osvvm.RandomPkg.all;
   use osvvm.CoveragePkg.all;
@@ -18,8 +10,10 @@ library libvhdl;
   use libvhdl.AssertP.all;
   use libvhdl.SimP.all;
   use libvhdl.QueueP.all;
-  use libvhdl.DictP.all;
   use libvhdl.UtilsP.all;
+
+library std;
+  use std.env.all;
 
 
 
@@ -90,7 +84,6 @@ architecture sim of WishBoneT is
     );
   end component WishBoneSlaveE;
 
-
   --* testbench global clock period
   constant C_PERIOD     : time := 5 ns;
   --* Wishbone data width
@@ -98,23 +91,26 @@ architecture sim of WishBoneT is
   --* Wishbone address width
   constant C_ADDRESS_WIDTH : natural := 8;
 
+  type t_wishbone is record
+    --+ wishbone outputs
+    Cyc       : std_logic;
+    Stb       : std_logic;
+    We        : std_logic;
+    Adr       : std_logic_vector(C_ADDRESS_WIDTH-1 downto 0);
+    WDat      : std_logic_vector(C_DATA_WIDTH-1 downto 0);
+    --+ wishbone inputs
+    RDat      : std_logic_vector(C_DATA_WIDTH-1 downto 0);
+    Ack       : std_logic;
+    Err       : std_logic;
+  end record t_wishbone;
+
+  signal s_wishbone : t_wishbone := ('Z', 'Z', 'Z', (others => 'Z'), (others => 'Z'), (others => 'Z'), 'Z', 'Z');
+
   --* testbench global clock
   signal s_wb_clk : std_logic := '1';
   --* testbench global reset
   signal s_wb_reset : std_logic := '1';
 
-  --+ test done array with entry for each test
-  signal s_test_done : boolean;
-
-
-  signal s_wb_cyc              : std_logic;
-  signal s_wb_stb              : std_logic;
-  signal s_wb_we               : std_logic;
-  signal s_wb_adr              : std_logic_vector(C_ADDRESS_WIDTH-1 downto 0);
-  signal s_wb_master_data      : std_logic_vector(C_DATA_WIDTH-1 downto 0);
-  signal s_wb_slave_data       : std_logic_vector(C_DATA_WIDTH-1 downto 0);
-  signal s_wb_ack              : std_logic;
-  signal s_wb_err              : std_logic;
   signal s_master_local_wen    : std_logic;
   signal s_master_local_ren    : std_logic;
   signal s_master_local_adress : std_logic_vector(C_ADDRESS_WIDTH-1 downto 0);
@@ -131,15 +127,23 @@ architecture sim of WishBoneT is
   type t_register is array (0 to integer'(2**C_ADDRESS_WIDTH-1)) of std_logic_vector(C_DATA_WIDTH-1 downto 0);
 
   shared variable sv_wishbone_queue : t_list_queue;
-  shared variable sv_wishbone_dict  : t_dict;
-  shared variable sv_coverage       : CovPType;
+
+  package IntSlvDict is new libvhdl.DictP
+    generic map (KEY_TYPE         => integer,
+                 VALUE_TYPE       => std_logic_vector,
+                 key_to_string    => to_string,
+                 value_to_string  => to_hstring);
+
+  shared variable sv_wishbone_dict : IntSlvDict.t_dict;
+
+  shared variable sv_coverage      : CovPType;
 
 
 begin
 
 
   --* testbench global clock
-  s_wb_clk <= not(s_wb_clk) after C_PERIOD/2 when not(s_test_done) else '0';
+  s_wb_clk <= not(s_wb_clk) after C_PERIOD/2;
   --* testbench global reset
   s_wb_reset <= '0' after C_PERIOD * 5;
 
@@ -157,7 +161,6 @@ begin
     variable v_wbmaster_address : integer;
     variable v_master_local_adress : std_logic_vector(C_ADDRESS_WIDTH-1 downto 0);
     variable v_wbmaster_data    : std_logic_vector(C_DATA_WIDTH-1 downto 0);
-    variable v_error            : t_dict_error;
   begin
     v_random.InitSeed(v_random'instance_name);
     v_wbmaster_data       := (others => '0');
@@ -182,10 +185,7 @@ begin
       s_master_local_wen    <= '0';
       wait until rising_edge(s_wb_clk) and s_master_local_ack = '1';
       sv_wishbone_queue.push(uint_to_slv(v_wbmaster_address, C_ADDRESS_WIDTH));
-      sv_wishbone_dict.set(integer'image(v_wbmaster_address), v_wbmaster_data, v_error);
-      assert v_error = NO_ERROR
-        report "ERROR: key error"
-        severity failure;
+      sv_wishbone_dict.set(v_wbmaster_address, v_wbmaster_data);
       sv_coverage.ICover(v_wbmaster_address);
     end loop;
     -- read back and check the wishbone slave registers
@@ -197,10 +197,7 @@ begin
       s_master_local_adress <= (others => '0');
       s_master_local_ren    <= '0';
       wait until rising_edge(s_wb_clk) and s_master_local_ack = '1';
-      sv_wishbone_dict.get(integer'image(slv_to_uint(v_master_local_adress)), v_wbmaster_data, v_error);
-      assert v_error = NO_ERROR
-        report "ERROR: key error"
-        severity failure;
+      sv_wishbone_dict.get(slv_to_uint(v_master_local_adress), v_wbmaster_data);
       assert_equal(s_master_local_dout, v_wbmaster_data);
     end loop;
     -- test local write & read at the same time
@@ -215,7 +212,7 @@ begin
     report "INFO: Test successfully finished!";
     sv_coverage.SetMessage("WishboneT coverage results");
     sv_coverage.WriteBin;
-    s_test_done <= true;
+    finish;
     wait;
   end process WbMasterLocalP;
 
@@ -230,15 +227,15 @@ begin
       WbRst_i       => s_wb_reset,
       WbClk_i       => s_wb_clk,
       --+ wishbone outputs
-      WbCyc_o       => s_wb_cyc,
-      WbStb_o       => s_wb_stb,
-      WbWe_o        => s_wb_we,
-      WbAdr_o       => s_wb_adr,
-      WbDat_o       => s_wb_master_data,
+      WbCyc_o       => s_wishbone.Cyc,
+      WbStb_o       => s_wishbone.Stb,
+      WbWe_o        => s_wishbone.We,
+      WbAdr_o       => s_wishbone.Adr,
+      WbDat_o       => s_wishbone.WDat,
       --+ wishbone inputs
-      WbDat_i       => s_wb_slave_data,
-      WbAck_i       => s_wb_ack,
-      WbErr_i       => s_wb_err,
+      WbDat_i       => s_wishbone.RDat,
+      WbAck_i       => s_wishbone.Ack,
+      WbErr_i       => s_wishbone.Err,
       --+ local register if
       LocalWen_i    => s_master_local_wen,
       LocalRen_i    => s_master_local_ren,
@@ -258,18 +255,18 @@ begin
       wait until (s_master_local_wen = '1' or s_master_local_ren = '1') and rising_edge(s_wb_clk);
       v_master_local_adress := s_master_local_adress;
       v_master_local_data   := s_master_local_din;
-      v_valid_access        := s_master_local_wen  xor s_master_local_ren;
+      v_valid_access        := s_master_local_wen xor s_master_local_ren;
       wait until rising_edge(s_wb_clk);
-      WB_CYC : assert v_valid_access = s_wb_cyc
-        report "ERROR: Wishbone cycle should be 0b" & to_string(v_valid_access) & " instead of 0b" & to_string(s_wb_cyc)
+      WB_CYC : assert v_valid_access = s_wishbone.Cyc
+        report "ERROR: Wishbone cycle should be 0b" & to_string(v_valid_access) & " instead of 0b" & to_string(s_wishbone.Cyc)
         severity failure;
       if (v_valid_access = '1') then
-        WB_ADDR : assert s_wb_adr = v_master_local_adress
-          report "ERROR: Wishbone address 0x" & to_hstring(s_wb_adr) & " differ from local address 0x" & to_hstring(v_master_local_adress)
+        WB_ADDR : assert s_wishbone.Adr = v_master_local_adress
+          report "ERROR: Wishbone address 0x" & to_hstring(s_wishbone.Adr) & " differ from local address 0x" & to_hstring(v_master_local_adress)
           severity failure;
-        if (s_wb_we = '1') then
-          WB_DATA : assert s_wb_master_data = v_master_local_data
-            report "ERROR: Wishbone data 0x" & to_hstring(s_wb_master_data) & " differ from local data 0x" & to_hstring(v_master_local_data)
+        if (s_wishbone.We = '1') then
+          WB_DATA : assert s_wishbone.WDat = v_master_local_data
+            report "ERROR: Wishbone data 0x" & to_hstring(s_wishbone.WDat) & " differ from local data 0x" & to_hstring(v_master_local_data)
             severity failure;
         end if;
       end if;
@@ -286,15 +283,15 @@ begin
       WbRst_i       => s_wb_reset,
       WbClk_i       => s_wb_clk,
       --+ wishbone inputs
-      WbCyc_i       => s_wb_cyc,
-      WbStb_i       => s_wb_stb,
-      WbWe_i        => s_wb_we,
-      WbAdr_i       => s_wb_adr,
-      WbDat_i       => s_wb_master_data,
+      WbCyc_i       => s_wishbone.Cyc,
+      WbStb_i       => s_wishbone.Stb,
+      WbWe_i        => s_wishbone.We,
+      WbAdr_i       => s_wishbone.Adr,
+      WbDat_i       => s_wishbone.WDat,
       --* wishbone outputs
-      WbDat_o       => s_wb_slave_data,
-      WbAck_o       => s_wb_ack,
-      WbErr_o       => s_wb_err,
+      WbDat_o       => s_wishbone.RDat,
+      WbAck_o       => s_wishbone.Ack,
+      WbErr_o       => s_wishbone.Err,
       --+ local register if
       LocalWen_o    => s_slave_local_wen,
       LocalRen_o    => s_slave_local_ren,

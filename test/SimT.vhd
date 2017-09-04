@@ -2,13 +2,6 @@ library ieee;
   use ieee.std_logic_1164.all;
   use ieee.numeric_std.all;
 
---+ including vhdl 2008 libraries
---+ These lines can be commented out when using
---+ a simulator with built-in VHDL 2008 support
---library ieee_proposed;
---  use ieee_proposed.standard_additions.all;
---  use ieee_proposed.std_logic_1164_additions.all;
---  use ieee_proposed.numeric_std_additions.all;
 
 library osvvm;
   use osvvm.RandomPkg.all;
@@ -16,7 +9,6 @@ library osvvm;
 library libvhdl;
   use libvhdl.AssertP.all;
   use libvhdl.SimP.all;
-  use libvhdl.QueueP.all;
   use libvhdl.UtilsP.all;
 
 
@@ -43,8 +35,15 @@ architecture sim of SimT is
   signal s_mosi : std_logic;
   signal s_miso : std_logic;
 
-  shared variable sv_mosi_queue : t_list_queue;
-  shared variable sv_miso_queue : t_list_queue;
+  package SlvQueue is new libvhdl.QueueP
+    generic map (
+      QUEUE_TYPE => std_logic_vector(C_DATA_WIDTH-1 downto 0),
+      MAX_LEN    => 32,
+      to_string  => to_hstring
+    );
+
+  shared variable sv_mosi_queue : SlvQueue.t_list_queue;
+  shared variable sv_miso_queue : SlvQueue.t_list_queue;
 
 
 begin
@@ -55,8 +54,8 @@ begin
 
   QueueInitP : process is
   begin
-    sv_mosi_queue.init(32);
-    sv_miso_queue.init(32);
+    sv_mosi_queue.init(false);
+    sv_miso_queue.init(false);
     wait;
   end process QueueInitP;
 

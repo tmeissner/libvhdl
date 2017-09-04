@@ -9,7 +9,6 @@ library osvvm;
 library libvhdl;
   use libvhdl.AssertP.all;
   use libvhdl.SimP.all;
-  use libvhdl.QueueP.all;
   use libvhdl.UtilsP.all;
 
 library std;
@@ -126,7 +125,15 @@ architecture sim of WishBoneT is
 
   type t_register is array (0 to integer'(2**C_ADDRESS_WIDTH-1)) of std_logic_vector(C_DATA_WIDTH-1 downto 0);
 
-  shared variable sv_wishbone_queue : t_list_queue;
+
+  package SlvQueue is new libvhdl.QueueP
+    generic map (
+      QUEUE_TYPE => std_logic_vector(C_ADDRESS_WIDTH-1 downto 0),
+      MAX_LEN    => 2**C_ADDRESS_WIDTH,
+      to_string  => to_hstring
+    );
+
+  shared variable sv_wishbone_queue : SlvQueue.t_list_queue;
 
   package IntSlvDict is new libvhdl.DictP
     generic map (KEY_TYPE         => integer,
@@ -150,7 +157,7 @@ begin
 
   QueueInitP : process is
   begin
-    sv_wishbone_queue.init(2**C_ADDRESS_WIDTH);
+    sv_wishbone_queue.init(false);
     sv_wishbone_dict.init(false);
     wait;
   end process QueueInitP;

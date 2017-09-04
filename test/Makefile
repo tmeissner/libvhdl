@@ -32,7 +32,7 @@ UtilsP.o: $(CMN_SRC)/UtilsP.vhd
 	ghdl -a --std=$(VHD_STD) --work=libvhdl $<
 
 
-queuet: AssertP.o QueueP.o QueueT.vhd
+queuet: RandomPkg.o AssertP.o QueueP.o QueueT.vhd
 	ghdl -a --std=$(VHD_STD) QueueT.vhd
 	ghdl -e --std=$(VHD_STD) $@
 

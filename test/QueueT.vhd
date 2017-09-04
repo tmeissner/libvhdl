@@ -4,7 +4,9 @@ library ieee;
 
 library libvhdl;
   use libvhdl.AssertP.all;
-  use libvhdl.QueueP.all;
+
+library osvvm;
+  use osvvm.RandomPkg.all;
 
 
 
@@ -18,8 +20,15 @@ architecture sim of QueueT is
 
   constant C_QUEUE_DEPTH : natural := 64;
 
-  shared variable sv_simple_queue : t_simple_queue;
-  shared variable sv_list_queue   : t_list_queue;
+  package SlvQueue is new libvhdl.QueueP
+    generic map (
+      QUEUE_TYPE => std_logic_vector(63 downto 0),
+      MAX_LEN    => C_QUEUE_DEPTH,
+      to_string  => to_hstring
+    );
+
+  shared variable sv_simple_queue : SlvQueue.t_simple_queue;
+  shared variable sv_list_queue   : SlvQueue.t_list_queue;
 
 
 begin
@@ -27,26 +36,34 @@ begin
 
   QueueInitP : process is
   begin
-    sv_list_queue.init(C_QUEUE_DEPTH);
+    sv_simple_queue.init(false);
+    sv_list_queue.init(false);
     wait;
   end process QueueInitP;
 
 
 
   SimpleQueueTestP : process is
-    variable v_data  : std_logic_vector(63 downto 0);
+    variable v_data   : std_logic_vector(63 downto 0);
+    variable v_random : RandomPType;
   begin
     -- check initial emptiness
     assert_true(sv_simple_queue.is_empty, "Queue should be empty!");
-    for i in 0 to 63 loop
-      sv_simple_queue.push(std_logic_vector(to_unsigned(i, 64)));
+    -- Fill queue
+    v_random.InitSeed(v_random'instance_name);
+    for i in 0 to C_QUEUE_DEPTH-1 loop
+      v_data := v_random.RandSlv(64);
+      sv_simple_queue.push(v_data);
     end loop;
     -- check that it's full
     assert_true(sv_simple_queue.is_full, "Queue should be full!");
+    -- Check number of entries
+    assert_equal(sv_simple_queue.fillstate, C_QUEUE_DEPTH, "Queue should have" & integer'image(C_QUEUE_DEPTH) & "entries");
     -- empty the queue
-    for i in 0 to 63 loop
+    v_random.InitSeed(v_random'instance_name);
+    for i in 0 to C_QUEUE_DEPTH-1 loop
       sv_simple_queue.pop(v_data);
-      assert_equal(v_data, std_logic_vector(to_unsigned(i, 64)));
+      assert_equal(v_data, v_random.RandSlv(64));
     end loop;
     -- check emptiness
     assert_true(sv_simple_queue.is_empty, "Queue should be empty!");
@@ -56,19 +73,26 @@ begin
 
 
   ListQueueTestP : process is
-    variable v_data : std_logic_vector(7 downto 0);
+    variable v_data   : std_logic_vector(63 downto 0);
+    variable v_random : RandomPType;
   begin
     -- check initial emptiness
     assert_true(sv_list_queue.is_empty, "Queue should be empty!");
+    -- Fill queue
+    v_random.InitSeed(v_random'instance_name);
     for i in 0 to C_QUEUE_DEPTH-1 loop
-      sv_list_queue.push(std_logic_vector(to_unsigned(i, 8)));
+      v_data := v_random.RandSlv(64);
+      sv_list_queue.push(v_data);
     end loop;
     -- check that it's full
+    assert_true(sv_list_queue.is_full, "Queue should be full!");
+    -- Check number of entries
     assert_equal(sv_list_queue.fillstate, C_QUEUE_DEPTH, "Queue should have" & integer'image(C_QUEUE_DEPTH) & "entries");
     -- empty the queue
+    v_random.InitSeed(v_random'instance_name);
     for i in 0 to C_QUEUE_DEPTH-1 loop
       sv_list_queue.pop(v_data);
-      assert_equal(v_data, std_logic_vector(to_unsigned(i, 8)));
+      assert_equal(v_data, v_random.RandSlv(64));
     end loop;
     -- check emptiness
     assert_true(sv_list_queue.is_empty, "Queue should be empty!");

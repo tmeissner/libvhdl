@@ -24,4 +24,4 @@ matrix:
 install: true
 
 script:
-    - cd test; make all
+    - cd libvhdl/test; make all

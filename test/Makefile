@@ -9,14 +9,6 @@ VHD_STD := 08
 all: queue dict stack sim wishbone
 
 
-.PHONY: vhdl2008
-vhdl2008 : $(VHD08_SRC)/env_c.vhdl $(VHD08_SRC)/numeric_std_additions.vhdl $(VHD08_SRC)/numeric_std_unsigned_c.vhdl \
-$(VHD08_SRC)/standard_additions_c.vhdl $(VHD08_SRC)/standard_textio_additions_c.vhdl $(VHD08_SRC)/std_logic_1164_additions.vhdl
-	ghdl -a --std=$(VHD_STD) --work=ieee_proposed $(VHD08_SRC)/standard_additions_c.vhdl \
-	$(VHD08_SRC)/standard_textio_additions_c.vhdl $(VHD08_SRC)/std_logic_1164_additions.vhdl $(VHD08_SRC)/numeric_std_additions.vhdl \
-	$(VHD08_SRC)/numeric_std_unsigned_c.vhdl $(VHD08_SRC)/env_c.vhdl
-
-
 RandomPkg.o: OSVVM/SortListPkg_int.vhd OSVVM/RandomBasePkg.vhd OSVVM/RandomPkg.vhd
 	ghdl -a --std=$(VHD_STD) --work=osvvm $^
 
@@ -92,4 +84,3 @@ clean:
 
 .PHONY: distclean
 distclean: clean
-	rm -f $(VHD08_SRC)/*.vhdl

@@ -1,4 +1,4 @@
-language: c
+language: python
 matrix:
   include:
   # Python 3.5 with ghdl llvm
@@ -20,9 +20,8 @@ matrix:
     - make
     - make install
     - cd ../../
-    - export PATH=$PATH:install-ghdl-llvm/bin/
 
 install: true
 
 script:
-- cd test; make all
+- export PATH=$PATH:install-ghdl-llvm/bin/; cd test; make all

@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/tmeissner/libvhdl.svg?branch=master)](https://travis-ci.org/tmeissner/libvhdl)
+
 # libvhdl
 A LGPL3 licensed library of reusable components for VHDL designs and testbenches.
 
@@ -28,7 +30,7 @@ Package with various components general useful for simulation
 * `spi_slave()` configurable slave for SPI protocol, supports all cpol/cpha modes
 
 ##### QueueP
-Package with various implementations of queue types:
+Generic package with various implementations of queue types:
 
 * `t_simple_queue` simple array based FIFO queue
 * `t_list_queue` linked list FIFO queue using access types

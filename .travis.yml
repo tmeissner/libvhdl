@@ -1,4 +1,9 @@
 language: c
+
+branches:
+  only:
+  - master
+
 matrix:
   include:
   # Python 3.5 with ghdl llvm

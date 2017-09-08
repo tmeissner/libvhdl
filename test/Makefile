@@ -1,6 +1,7 @@
 SIM_SRC := ../sim
 SYN_SRC := ../syn
 CMN_SRC := ../common
+OSVVM_SRC := ../OSVVM
 VHD08_SRC := vhdl_2008
 VHD_STD := 08
 
@@ -9,11 +10,26 @@ VHD_STD := 08
 all: queue dict stack sim wishbone
 
 
-RandomPkg.o: OSVVM/SortListPkg_int.vhd OSVVM/RandomBasePkg.vhd OSVVM/RandomPkg.vhd
-	ghdl -a --std=$(VHD_STD) --work=osvvm $^
+OsvvmContext.o: $(OSVVM_SRC)/*.vhd
+	ghdl -a --std=$(VHD_STD) --work=osvvm $(OSVVM_SRC)/NamePkg.vhd
+	ghdl -a --std=$(VHD_STD) --work=osvvm $(OSVVM_SRC)/OsvvmGlobalPkg.vhd
+	ghdl -a --std=$(VHD_STD) --work=osvvm $(OSVVM_SRC)/VendorCovApiPkg.vhd
+	ghdl -a --std=$(VHD_STD) --work=osvvm $(OSVVM_SRC)/TranscriptPkg.vhd
+	ghdl -a --std=$(VHD_STD) --work=osvvm $(OSVVM_SRC)/TextUtilPkg.vhd
+	ghdl -a --std=$(VHD_STD) --work=osvvm $(OSVVM_SRC)/AlertLogPkg.vhd
+	ghdl -a --std=$(VHD_STD) --work=osvvm $(OSVVM_SRC)/MessagePkg.vhd
+	ghdl -a --std=$(VHD_STD) --work=osvvm $(OSVVM_SRC)/SortListPkg_int.vhd
+	ghdl -a --std=$(VHD_STD) --work=osvvm $(OSVVM_SRC)/RandomBasePkg.vhd
+	ghdl -a --std=$(VHD_STD) --work=osvvm $(OSVVM_SRC)/RandomPkg.vhd
+	ghdl -a --std=$(VHD_STD) --work=osvvm $(OSVVM_SRC)/CoveragePkg.vhd
+	ghdl -a --std=$(VHD_STD) --work=osvvm $(OSVVM_SRC)/MemoryPkg.vhd
+	ghdl -a --std=$(VHD_STD) --work=osvvm $(OSVVM_SRC)/ScoreboardGenericPkg.vhd
+	ghdl -a --std=$(VHD_STD) --work=osvvm $(OSVVM_SRC)/ScoreboardPkg_slv.vhd
+	ghdl -a --std=$(VHD_STD) --work=osvvm $(OSVVM_SRC)/ScoreboardPkg_int.vhd
+	ghdl -a --std=$(VHD_STD) --work=osvvm $(OSVVM_SRC)/ResolutionPkg.vhd
+	ghdl -a --std=$(VHD_STD) --work=osvvm $(OSVVM_SRC)/TbUtilPkg.vhd
+	ghdl -a --std=$(VHD_STD) --work=osvvm $(OSVVM_SRC)/OsvvmContext.vhd 
 
-CoveragePkg.o: RandomPkg.o OSVVM/MessagePkg.vhd
-	ghdl -a --std=$(VHD_STD) --work=osvvm OSVVM/MessagePkg.vhd OSVVM/CoveragePkg.vhd
 
 UtilsP.o: $(CMN_SRC)/UtilsP.vhd
 	ghdl -a --std=$(VHD_STD) --work=libvhdl $<
@@ -24,25 +40,25 @@ UtilsP.o: $(CMN_SRC)/UtilsP.vhd
 	ghdl -a --std=$(VHD_STD) --work=libvhdl $<
 
 
-queuet: RandomPkg.o AssertP.o QueueP.o QueueT.vhd
+queuet: OsvvmContext.o AssertP.o QueueP.o QueueT.vhd
 	ghdl -a --std=$(VHD_STD) QueueT.vhd
 	ghdl -e --std=$(VHD_STD) $@
 
 
-dictt: RandomPkg.o DictP.o DictT.vhd
+dictt: OsvvmContext.o DictP.o DictT.vhd
 	ghdl -a --std=$(VHD_STD) DictT.vhd
 	ghdl -e --std=$(VHD_STD) $@
 
-stackt: RandomPkg.o AssertP.o StackP.o StackT.vhd
+stackt: OsvvmContext.o AssertP.o StackP.o StackT.vhd
 	ghdl -a --std=$(VHD_STD) StackT.vhd
 	ghdl -e --std=$(VHD_STD) $@
 
-simt: RandomPkg.o UtilsP.o AssertP.o QueueP.o SimP.o SimT.vhd
+simt: OsvvmContext.o UtilsP.o AssertP.o QueueP.o SimP.o SimT.vhd
 	ghdl -a --std=$(VHD_STD) SimT.vhd
 	ghdl -e --std=$(VHD_STD) $@
 
 
-spit: RandomPkg.o UtilsP.o $(SYN_SRC)/SpiSlaveE.vhd $(SYN_SRC)/SpiMasterE.vhd SpiT.vhd
+spit: OsvvmContext.o UtilsP.o $(SYN_SRC)/SpiSlaveE.vhd $(SYN_SRC)/SpiMasterE.vhd SpiT.vhd
 	ghdl -a --std=$(VHD_STD) -fpsl $(SYN_SRC)/SpiSlaveE.vhd $(SYN_SRC)/SpiMasterE.vhd
 	ghdl -a --std=$(VHD_STD) -fpsl SpiT.vhd
 	ghdl -e --std=$(VHD_STD) $@
@@ -52,7 +68,7 @@ spi: spit
 	ghdl -r --std=$(VHD_STD) $@t --wave=$@t.ghw
 
 
-wishbonet: RandomPkg.o CoveragePkg.o AssertP.o SimP.o QueueP.o DictP.o UtilsP.o \
+wishbonet: OsvvmContext.o AssertP.o SimP.o QueueP.o DictP.o UtilsP.o \
 	  $(SYN_SRC)/WishBoneMasterE.vhd $(SYN_SRC)/WishBoneSlaveE.vhd WishBoneT.vhd
 	ghdl -a --std=$(VHD_STD) -fpsl $(SYN_SRC)/WishBoneMasterE.vhd $(SYN_SRC)/WishBoneSlaveE.vhd
 	ghdl -a --std=$(VHD_STD) -fpsl WishBoneT.vhd

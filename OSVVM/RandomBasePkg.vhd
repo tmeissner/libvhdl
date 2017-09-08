@@ -1,7 +1,7 @@
 --
 --  File Name:         RandomBasePkg.vhd
 --  Design Unit Name:  RandomBasePkg
---  Revision:          STANDARD VERSION,  revision 2013.05
+--  Revision:          STANDARD VERSION
 --
 --  Maintainer:        Jim Lewis      email:  jim@synthworks.com
 --  Contributor(s):
@@ -38,9 +38,11 @@
 --                          Fixed abstraction by moving RandomParmType to RandomPkg.vhd 
 --    4/2013     2013.04    No Changes
 --    5/2013     2013.05    No Changes
+--    1/2015     2015.01    Changed Assert/Report to Alert
+--    6/2015     2015.06    Changed GenRandSeed to impure
 --
 --
---  Copyright (c) 2008 - 2013 by SynthWorks Design Inc.  All rights reserved.
+--  Copyright (c) 2008 - 2015 by SynthWorks Design Inc.  All rights reserved.
 --
 --  Verbatim copies of this source file may be used and
 --  distributed without restriction.
@@ -64,6 +66,9 @@ library ieee ;
 use ieee.math_real.all ;
 use std.textio.all ;
 
+use work.OsvvmGlobalPkg.all ; 
+use work.AlertLogPkg.all ; 
+
 -- comment out following 2 lines with VHDL-2008.  Leave in for VHDL-2002 
 -- library ieee_proposed ;						          -- remove with VHDL-2008
 -- use ieee_proposed.standard_additions.all ;   -- remove with VHDL-2008
@@ -80,9 +85,9 @@ package RandomBasePkg is
   -- Translate from integer_vector, integer, or string to RandomSeedType
   -- Required by RandomPkg.InitSeed
   -- GenRandSeed makes sure all values are in a valid range
-  function  GenRandSeed(IV : integer_vector) return RandomSeedType ;
-  function  GenRandSeed(I : integer) return RandomSeedType ;
-  function  GenRandSeed(S : string) return RandomSeedType ;
+  impure function  GenRandSeed(IV : integer_vector) return RandomSeedType ;
+  impure function  GenRandSeed(I : integer) return RandomSeedType ;
+  impure function  GenRandSeed(S : string) return RandomSeedType ;
   
   -- IO for RandomSeedType.  If use subtype, then create aliases here
   -- in a similar fashion VHDL-2008 std_logic_textio.
@@ -93,8 +98,11 @@ package RandomBasePkg is
   procedure read (variable L: inout line ; A : out RandomSeedType ) ;
 
 end RandomBasePkg ;
-  -----------------------------------------------------------------
-  -----------------------------------------------------------------
+
+--- ///////////////////////////////////////////////////////////////////////////
+--- ///////////////////////////////////////////////////////////////////////////
+--- ///////////////////////////////////////////////////////////////////////////
+
 package body RandomBasePkg is
 
   -----------------------------------------------------------------
@@ -126,7 +134,7 @@ package body RandomBasePkg is
   --    if 2 seed values are passed to GenRandSeed and they are 
   --    in the above range, then they must remain unmodified.
   --
-  function GenRandSeed(IV : integer_vector) return RandomSeedType is
+  impure function GenRandSeed(IV : integer_vector) return RandomSeedType is
     alias iIV : integer_vector(1 to IV'length) is IV ;
     variable Seed1 : integer ;
     variable Seed2 : integer ;
@@ -134,7 +142,7 @@ package body RandomBasePkg is
     constant SEED2_MAX : integer := 2147483398 ;
   begin
     if iIV'Length <= 0 then  -- no seed
-      report "%%FATAL:  GenRandSeed received NULL integer_vector" severity failure ;
+      Alert(OSVVM_ALERTLOG_ID, "RandomBasePkg.GenRandSeed received NULL integer_vector", FAILURE) ; 
       return (3, 17) ;  -- if continue seed = (3, 17)
 
     elsif iIV'Length = 1 then  -- one seed value
@@ -156,7 +164,7 @@ package body RandomBasePkg is
   --  GenRandSeed
   --    transform a single integer into the internal seed
   --
-  function GenRandSeed(I : integer) return RandomSeedType is
+  impure function GenRandSeed(I : integer) return RandomSeedType is
     variable result : integer_vector(1 to 2) ;
   begin
     result(1) := I ;
@@ -170,7 +178,7 @@ package body RandomBasePkg is
   --    transform a string value into the internal seed
   --    usage:  RV.GenRandSeed(RV'instance_path));
   --
-  function GenRandSeed(S : string) return RandomSeedType is
+  impure function GenRandSeed(S : string) return RandomSeedType is
     constant LEN : integer := S'length ;
     constant HALF_LEN : integer := LEN/2 ;
     alias revS : string(LEN downto 1) is S ;
@@ -205,22 +213,22 @@ package body RandomBasePkg is
 
   -----------------------------------------------------------------
   procedure read(variable L: inout line ; A : out RandomSeedType ; good : out boolean ) is
-    variable iGood : boolean ;
+    variable iReadValid : boolean ;
   begin
     for i in A'range loop
-      read(L, A(i), iGood) ;
-      exit when not iGood ;
+      read(L, A(i), iReadValid) ;
+      exit when not iReadValid ;
     end loop ;
-    good := iGood ;
+    good := iReadValid ;
   end procedure read ;
 
 
   -----------------------------------------------------------------
   procedure read(variable L: inout line ; A : out RandomSeedType ) is
-    variable good : boolean ;
+    variable ReadValid : boolean ;
   begin
-      read(L, A, good) ;
-      assert good report "read[line, RandomSeedType] failed" severity error ;
+      read(L, A, ReadValid) ;
+      AlertIfNot(ReadValid, OSVVM_ALERTLOG_ID, "RandomBasePkg.read[line, RandomSeedType] failed", FAILURE) ;  
   end procedure read ;
   
 end RandomBasePkg ;

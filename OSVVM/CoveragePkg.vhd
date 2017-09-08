@@ -1,19 +1,20 @@
 --
 --  File Name:         CoveragePkg.vhd
 --  Design Unit Name:  CoveragePkg
---  Revision:          STANDARD VERSION,  revision 2014.01
+--  Revision:          STANDARD VERSION
 --
 --  Maintainer:        Jim Lewis      email:  jim@synthworks.com
 --  Contributor(s):
 --     Jim Lewis          SynthWorks
 --     Matthias Alles     Creonic.    Inspired GetMinBinVal, GetMinPoint, GetCov
 --     Jerry Kaczynski    Aldec.      Inspired GetBin function
---
+--     Sebastian Dunst                Inspired GetBinName function
+--     ...                Aldec       Worked on VendorCov functional coverage interface
 --
 --  Package Defines
 --      Functional coverage modeling utilities and data structure
 --
---  Developed for:
+--  Developed by/for:
 --        SynthWorks Design Inc.
 --        VHDL Training Classes
 --        11898 SW 128th Ave.  Tigard, Or  97223
@@ -22,80 +23,32 @@
 --  Latest standard version available at:
 --        http://www.SynthWorks.com/downloads
 --
---  Revision History:  See also CoveragePkg_release_notes.pdf
+--  Revision History:      For more details, see CoveragePkg_release_notes.pdf
 --    Date      Version    Description
 --    06/2010:  0.1        Initial revision
 --    09/2010              Release in SynthWorks' VHDL Testbenches and Verification classes
---    02/2011:  1.0        Requires VHDL-2008 types integer_vector and boolean_vecctor
---                         Changed CoverBinType to facilitage long term support of cross coverage
+--    02/2011:  1.0        Changed CoverBinType to facilitage long term support of cross coverage
 --    02/2011:  1.1        Added GetMinCov, GetMaxCov, CountCovHoles, GetCovHole
 --    04/2011:  2.0        Added protected type based data structure:  CovPType
 --    06/2011:  2.1        Removed signal based coverage modeling
 --    07/2011:  2.2        Added randomization with coverage goals (AtLeast), weight, and percentage thresholds
---                         Revised RandCovPoint, RandCovBinVal, AddBins, AddCross, GenBin, Added SetWeightMode 
---                         Randomization with weights/weight modes
---                         Cleaned up parameter naming
---    11/2011:  2.2a       Changed constants ALL_RANGE, ZERO_BIN, and ONE_BIN to have a 1 index 
---                         rather than 0 to match the range of BinVal
+--    11/2011:  2.2a       Changed constants ALL_RANGE, ZERO_BIN, and ONE_BIN to have a 1 index
 --    12/2011:  2.2b       Fixed minor inconsistencies on interface declarations.
---                         Package RandomPkg is assumed to be in the same library as CoveragePkg
---    01/2012:  2.3        Added Function GetBin from Jerry K.
---                         Made write for RangeArrayType visible
---    01/2012:  2.4
---        Revised AddBins and AddCross to handle merging and deletion for overlapping bins
---          Note merging is an experimental feature.
---        Renamed RandCovHole to RandCovBinVal -  maintained old version calls new
---        Renamed GetCovHole to GetHoleBinVal -  maintained old version calls new
---    04/2013:  2013.04
---        Revised AddBins and AddCross s.t. bin merging is off by default.  
---          Added SetMerging to enable/disable merging. 
---          Note:  Merging is an experimental feature and still evolving.
---        Revised AddBins and AddCross to check for changes in BinVal size (different size bin).
---        Added RandCovPoint for integer.
---        Added SetThresholding and SetCovThreshold(Percent) to enable/disable(default) thresholding.  
---           Revised RandCovPoint and RandCovBinVal to use new mechanism.
---        Added SetCovTarget to increase/decrease coverage goals for longer/shorter simulation runs.
---           Made CovTarget the default percentage goal (via overloading) for methods RandCovPoint, 
---           RandCovBinVal, IsCovered, CountCovHoles, GetHoleBinVal, and WriteCovHoles 
---        Revised SetIllegalMode and ICover to support ILLEGAL_FAILURE (severity FAILURE on illegal bin).
---        Added manual bin iteration support.
---          BinIndex: GetNumBins, GetMinIndex, GetMaxIndex
---          BinVal:   GetBinVal(BinIndex), GetMinBinVal, GetMaxBinVal
---          Point:    GetPoint (BinIndex), GetMinPoint, GetMaxPoint
---        Added GetCov to return the current percent done of the entire coverage model.  
---        Added FileOpenWriteBin and FileCloseWriteBin to specify default file for WriteBin, WriteCovHoles, and DumpBin
---        Added CompareBins to facilitate comparing two coverage models.
---        Revised WriteBin, WriteCovHoles, and WriteCovDb to check for uninitialized model.
---        Revised WriteBins and WriteCovHoles to only print weight if the selected WeightMode uses the weight.
---        Added IsInitialized to check if a coverage model is initialized.
---        Added GetBinInfo and GetBinValLength to get bin information
---        Changed WriteCovDb default for File_Open_Kind to WRITE_MODE 
---        Revised WriteCovDb and ReadCovDb for new internal control/state variables
---        Removed IgnoreBin with AtLeast and Weight parameters.  These are zero for ignore bins.
---        Revised method naming for consistency.  The following have changed:
---          New Name	      Old Name	        Why
---          CovBinErrCnt	  GetErrorCount	    Consistency between packages
---          GetMinCount	    GetMinCov[return integer]	Naming clarity
---          GetMaxCount	    GetMaxCov[return integer]	Naming clarity
---          SetName	        SetItemName	      SetName now does multi-line messages
---        Deprecated usage of the AtLeast parameter (integer) with the following methods:
---          RandCovPoint, RandCovBinVal, IsCovered, CountCovHoles,
---          GetHoleBinVal, and WriteCovHoles.
---    5/2013     2013.05   
---        No changes of substance.           
---        Removed extra variable declaration in functions GetHoleBinval, 
---        RandCovBinVal, RandCovHole, GetHoleBinVal
---        Using work.RandomPkg.NULL_RANGE_TYPE to remove NULL range warnings
---    1/2014     2014.01
---        Revised ReadCovDb to support merging of coverage models
---        Revised RandCovPoint and RandCovBinVal to log the bin index in the LastIndex variable
---          Revised ICover to look in bin referenced by LastIndex first
---          Added GetLastIndex and GetLastBinVal
---        Revised AddBins and AddCross bin merging to allow arbitrary CountBin overlap (facilitated by LastIndex)
---          Note:  Merging is an experimental feature and still evolving.
---        Split SetName into SetMessage (headers) and SetName (printing illegal bins)
---        Added methods GetItemCount and GetTotalCovGoal
---        Revised GetCov to use CovTarget and overloaded to use a PercentCov parameter.
+--    01/2012:  2.3        Added Function GetBin from Jerry K.  Made write for RangeArrayType visible
+--    01/2012:  2.4        Added Merging of bins
+--    04/2013:  2013.04    Thresholding, CovTarget, Merging off by default,
+--    5/2013    2013.05    Release with updated RandomPkg.  Minimal changes.
+--    1/2014    2014.01    Merging of Cov Models, LastIndex
+--    7/2014    2014.07    Bin Naming (for requirements tracking), WriteBin with Pass/Fail, GenBin[integer_vector]
+--    12/2014   2014.07a   Fix memory leak in deallocate. Removed initialied pointers which can lead to leaks.
+--    01/2015   2015.01    Use AlertLogPkg to count assertions and filter log messages
+--    06/2015   2015.06    AddCross[CovMatrix?Type], Mirroring for WriteBin
+--    01/2016   2016.01    Fixes for pure functions.  Added bounds checking on ICover
+--    03/2016   2016.03    Added GetBinName(Index) to retrieve a bin's name
+--    11/2016   2016.11    Added VendorCovApiPkg and calls to bind it in.
+--    05/2017   2017.05    Updated WriteBin name printing
+--                         ClearCov (deprecates SetCovZero)
+--                         
 --
 --  Development Notes:
 --      The coverage procedures are named ICover to avoid conflicts with
@@ -106,7 +59,7 @@
 --      composites with unconstrained elements
 --
 --
---  Copyright (c) 2010 - 2013 by SynthWorks Design Inc.  All rights reserved.
+--  Copyright (c) 2010 - 2017 by SynthWorks Design Inc.  All rights reserved.
 --
 --  Verbatim copies of this source file may be used and
 --  distributed without restriction.
@@ -144,9 +97,15 @@ use std.textio.all ;
 -- library ieee_proposed ;						          -- remove with VHDL-2008
 -- use ieee_proposed.standard_additions.all ;   -- remove with VHDL-2008
 
+use work.TextUtilPkg.all ;
+use work.TranscriptPkg.all ;
+use work.AlertLogPkg.all ; 
 use work.RandomBasePkg.all ;
 use work.RandomPkg.all ;
-use work.MessagePkg.all ; 
+use work.NamePkg.all ;
+use work.MessagePkg.all ;
+use work.OsvvmGlobalPkg.all ;
+use work.VendorCovApiPkg.all ; 
 
 package CoveragePkg is
 
@@ -169,11 +128,19 @@ package CoveragePkg is
   constant COV_IGNORE  : integer := 0 ;
   constant COV_ILLEGAL : integer := -1 ;
 
+  -- type OsvvmOptionsType is (OPT_DEFAULT, FALSE, TRUE) ;
+  alias CovOptionsType is work.OsvvmGlobalPkg.OsvvmOptionsType ; 
+  constant COV_OPT_INIT_PARM_DETECT : CovOptionsType := work.OsvvmGlobalPkg.OPT_INIT_PARM_DETECT ;
+  -- For backward compatibility.  Don't add to other packages.  
+  alias DISABLED is work.OsvvmGlobalPkg.DISABLED [return work.OsvvmGlobalPkg.OsvvmOptionsType ];  
+  alias ENABLED is work.OsvvmGlobalPkg.ENABLED [return work.OsvvmGlobalPkg.OsvvmOptionsType ];  
+
+-- Deprecated
   -- Used for easy manual entry.  Order: min, max, action
   -- Intentionally did not use a record to allow other input
   -- formats in the future with VHDL-2008 unconstrained arrays
   -- of unconstrained elements
-  type CovBinManualType is array (natural range <>) of integer_vector(0 to 2) ;
+  --  type CovBinManualType is array (natural range <>) of integer_vector(0 to 2) ;
 
   type CovBinBaseType is record
     BinVal    : RangeArrayType(1 to 1) ;
@@ -270,7 +237,10 @@ package CoveragePkg is
     Weight    : integer ;
   end record ;
   type CovMatrix9Type is array (natural range <>) of CovMatrix9BaseType ;
-
+  
+  ------------------------------------------------------------  VendorCov
+  -- VendorCov Conversion for Vendor supported functional coverage modeling
+  function ToVendorCovBinVal (BinVal : RangeArrayType) return VendorCovRangeArrayType ;
 
   ------------------------------------------------------------
   function ToMinPoint (A : RangeArrayType) return integer ;
@@ -286,7 +256,6 @@ package CoveragePkg is
     constant BinVal   : in    RangeArrayType ;
     variable result   : out   integer
   ) ;
-
 
   ------------------------------------------------------------
   procedure ToRandPoint(
@@ -306,12 +275,19 @@ package CoveragePkg is
   type CovPType is protected
     procedure FileOpenWriteBin (FileName : string; OpenKind : File_Open_Kind ) ;
     procedure FileCloseWriteBin ;
+    procedure SetAlertLogID (A : AlertLogIDType) ;
+    procedure SetAlertLogID(Name : string ; ParentID : AlertLogIDType := ALERTLOG_BASE_ID ; CreateHierarchy : Boolean := TRUE) ;
+    impure function GetAlertLogID return AlertLogIDType ;
+
     -- procedure FileOpenWriteCovDb (FileName : string; OpenKind : File_Open_Kind ) ;
     -- procedure FileCloseWriteCovDb ;
     procedure SetIllegalMode (A : IllegalModeType) ;
     procedure SetWeightMode (A : WeightModeType;  Scale : real := 1.0) ;
-    procedure SetName (NameIn : String) ;
-    procedure SetMessage (MessageIn : String) ;
+    procedure SetName (Name : String) ;
+    impure function SetName (Name : String) return string ;
+    impure function GetName return String ;
+    impure function GetCovModelName return String ;
+    procedure SetMessage (Message : String) ;
     procedure DeallocateName ; -- clear name
     procedure DeallocateMessage ; -- clear message
     procedure SetThresholding(A : boolean := TRUE ) ; -- 2.5
@@ -321,26 +297,44 @@ package CoveragePkg is
     procedure SetMerging(A : boolean := TRUE ) ; -- 2.5
     procedure SetCountMode (A : CountModeType) ;
     procedure InitSeed (S  : string ) ;
+    impure function InitSeed (S : string ) return string ;
     procedure InitSeed (I  : integer ) ;
     procedure SetSeed (RandomSeedIn : RandomSeedType ) ;
     impure function GetSeed return RandomSeedType ;
+
+    ------------------------------------------------------------
+    procedure SetReportOptions (
+      WritePassFail   : CovOptionsType := COV_OPT_INIT_PARM_DETECT ;
+      WriteBinInfo    : CovOptionsType := COV_OPT_INIT_PARM_DETECT ;
+      WriteCount      : CovOptionsType := COV_OPT_INIT_PARM_DETECT ;
+      WriteAnyIllegal : CovOptionsType := COV_OPT_INIT_PARM_DETECT ;
+      WritePrefix     : string := OSVVM_STRING_INIT_PARM_DETECT ;
+      PassName        : string := OSVVM_STRING_INIT_PARM_DETECT ;
+      FailName        : string := OSVVM_STRING_INIT_PARM_DETECT
+    ) ;
 
     procedure SetBinSize (NewNumBins : integer) ;
 
     ------------------------------------------------------------
     procedure AddBins (
+    ------------------------------------------------------------
+      Name    : String ;
       AtLeast : integer ;
       Weight  : integer ;
-      CovBin : CovBinType
+      CovBin  : CovBinType
     ) ;
-
-    procedure AddBins (AtLeast : integer ;  CovBin : CovBinType) ;
-    procedure AddBins (CovBin : CovBinType) ;
+    procedure AddBins ( Name : String ; AtLeast : integer ; CovBin : CovBinType ) ;
+    procedure AddBins ( Name : String ;  CovBin : CovBinType) ;
+    procedure AddBins ( AtLeast : integer ; Weight  : integer ; CovBin : CovBinType ) ;
+    procedure AddBins ( AtLeast : integer ; CovBin : CovBinType ) ;
+    procedure AddBins ( CovBin : CovBinType ) ;
 
     ------------------------------------------------------------
     procedure AddCross(
-      AtLeast : integer ;
-      Weight  : integer ;
+    ------------------------------------------------------------
+      Name       : string ;
+      AtLeast    : integer ;
+      Weight     : integer ;
       Bin1, Bin2 : CovBinType ;
       Bin3, Bin4, Bin5, Bin6, Bin7, Bin8, Bin9, Bin10, Bin11, Bin12, Bin13,
       Bin14, Bin15, Bin16, Bin17, Bin18, Bin19, Bin20 : CovBinType := NULL_BIN
@@ -348,7 +342,33 @@ package CoveragePkg is
 
     ------------------------------------------------------------
     procedure AddCross(
-      AtLeast : integer ;
+      Name       : string ;
+      AtLeast    : integer ;
+      Bin1, Bin2 : CovBinType ;
+      Bin3, Bin4, Bin5, Bin6, Bin7, Bin8, Bin9, Bin10, Bin11, Bin12, Bin13,
+      Bin14, Bin15, Bin16, Bin17, Bin18, Bin19, Bin20 : CovBinType := NULL_BIN
+    ) ;
+
+    ------------------------------------------------------------
+    procedure AddCross(
+      Name       : string ;
+      Bin1, Bin2 : CovBinType ;
+      Bin3, Bin4, Bin5, Bin6, Bin7, Bin8, Bin9, Bin10, Bin11, Bin12, Bin13,
+      Bin14, Bin15, Bin16, Bin17, Bin18, Bin19, Bin20 : CovBinType := NULL_BIN
+    ) ;
+
+    ------------------------------------------------------------
+    procedure AddCross(
+      AtLeast    : integer ;
+      Weight     : integer ;
+      Bin1, Bin2 : CovBinType ;
+      Bin3, Bin4, Bin5, Bin6, Bin7, Bin8, Bin9, Bin10, Bin11, Bin12, Bin13,
+      Bin14, Bin15, Bin16, Bin17, Bin18, Bin19, Bin20 : CovBinType := NULL_BIN
+    ) ;
+
+    ------------------------------------------------------------
+    procedure AddCross(
+      AtLeast    : integer ;
       Bin1, Bin2 : CovBinType ;
       Bin3, Bin4, Bin5, Bin6, Bin7, Bin8, Bin9, Bin10, Bin11, Bin12, Bin13,
       Bin14, Bin15, Bin16, Bin17, Bin18, Bin19, Bin20 : CovBinType := NULL_BIN
@@ -360,6 +380,7 @@ package CoveragePkg is
       Bin3, Bin4, Bin5, Bin6, Bin7, Bin8, Bin9, Bin10, Bin11, Bin12, Bin13,
       Bin14, Bin15, Bin16, Bin17, Bin18, Bin19, Bin20 : CovBinType := NULL_BIN
     ) ;
+
 
     procedure Deallocate ;
 
@@ -367,6 +388,7 @@ package CoveragePkg is
     procedure ICover( CovPoint : integer) ;
     procedure ICover( CovPoint : integer_vector) ;
 
+    procedure ClearCov ;
     procedure SetCovZero ;
 
     impure function IsInitialized return boolean ;
@@ -383,10 +405,10 @@ package CoveragePkg is
     impure function IsCovered ( PercentCov : real ) return boolean ;
     impure function GetCov ( PercentCov : real ) return real ;
     impure function GetCov return real ; -- PercentCov of entire model/all bins
-    impure function GetItemCount return integer ; 
-    impure function GetTotalCovGoal ( PercentCov : real ) return integer ; 
-    impure function GetTotalCovGoal return integer ; 
-    impure function GetLastIndex return integer ; 
+    impure function GetItemCount return integer ;
+    impure function GetTotalCovGoal ( PercentCov : real ) return integer ;
+    impure function GetTotalCovGoal return integer ;
+    impure function GetLastIndex return integer ;
 
     -- Return BinVal
     impure function GetBinVal ( BinIndex : integer ) return RangeArrayType ;
@@ -426,31 +448,82 @@ package CoveragePkg is
     impure function GetBin ( BinIndex : integer ) return CovMatrix7BaseType ;
     impure function GetBin ( BinIndex : integer ) return CovMatrix8BaseType ;
     impure function GetBin ( BinIndex : integer ) return CovMatrix9BaseType ;
+    impure function GetBinName ( BinIndex : integer; DefaultName : string := "" ) return string ;
 
-    -- procedure WriteBin ( file f : text ) ;
-    procedure WriteBin ;
-    procedure WriteBin ( FileName : string; OpenKind : File_Open_Kind := APPEND_MODE ) ;
-    procedure WriteCovHoles ;
+    ------------------------------------------------------------
+    procedure WriteBin (
+      WritePassFail   : CovOptionsType := COV_OPT_INIT_PARM_DETECT ;
+      WriteBinInfo    : CovOptionsType := COV_OPT_INIT_PARM_DETECT ;
+      WriteCount      : CovOptionsType := COV_OPT_INIT_PARM_DETECT ;
+      WriteAnyIllegal : CovOptionsType := COV_OPT_INIT_PARM_DETECT ;
+      WritePrefix     : string := OSVVM_STRING_INIT_PARM_DETECT ;
+      PassName        : string := OSVVM_STRING_INIT_PARM_DETECT ;
+      FailName        : string := OSVVM_STRING_INIT_PARM_DETECT
+    ) ;
+
+    ------------------------------------------------------------
+    procedure WriteBin (  -- With LogLevel
+      LogLevel        : LogType ;
+      WritePassFail   : CovOptionsType := COV_OPT_INIT_PARM_DETECT ;
+      WriteBinInfo    : CovOptionsType := COV_OPT_INIT_PARM_DETECT ;
+      WriteCount      : CovOptionsType := COV_OPT_INIT_PARM_DETECT ;
+      WriteAnyIllegal : CovOptionsType := COV_OPT_INIT_PARM_DETECT ;
+      WritePrefix     : string := OSVVM_STRING_INIT_PARM_DETECT ;
+      PassName        : string := OSVVM_STRING_INIT_PARM_DETECT ;
+      FailName        : string := OSVVM_STRING_INIT_PARM_DETECT
+    ) ;
+
+    ------------------------------------------------------------
+    procedure WriteBin (
+      FileName        : string;
+      OpenKind        : File_Open_Kind := APPEND_MODE ;
+      WritePassFail   : CovOptionsType := COV_OPT_INIT_PARM_DETECT ;
+      WriteBinInfo    : CovOptionsType := COV_OPT_INIT_PARM_DETECT ;
+      WriteCount      : CovOptionsType := COV_OPT_INIT_PARM_DETECT ;
+      WriteAnyIllegal : CovOptionsType := COV_OPT_INIT_PARM_DETECT ;
+      WritePrefix     : string := OSVVM_STRING_INIT_PARM_DETECT ;
+      PassName        : string := OSVVM_STRING_INIT_PARM_DETECT ;
+      FailName        : string := OSVVM_STRING_INIT_PARM_DETECT
+    ) ;
+
+    ------------------------------------------------------------
+    procedure WriteBin (  -- With LogLevel
+      LogLevel        : LogType ;
+      FileName        : string;
+      OpenKind        : File_Open_Kind := APPEND_MODE ;
+      WritePassFail   : CovOptionsType := COV_OPT_INIT_PARM_DETECT ;
+      WriteBinInfo    : CovOptionsType := COV_OPT_INIT_PARM_DETECT ;
+      WriteCount      : CovOptionsType := COV_OPT_INIT_PARM_DETECT ;
+      WriteAnyIllegal : CovOptionsType := COV_OPT_INIT_PARM_DETECT ;
+      WritePrefix     : string := OSVVM_STRING_INIT_PARM_DETECT ;
+      PassName        : string := OSVVM_STRING_INIT_PARM_DETECT ;
+      FailName        : string := OSVVM_STRING_INIT_PARM_DETECT
+    ) ;
+    
+    procedure WriteCovHoles ( LogLevel : LogType := ALWAYS ) ;
     procedure WriteCovHoles ( PercentCov : real ) ;
+    procedure WriteCovHoles ( LogLevel : LogType ; PercentCov : real ) ;
     procedure WriteCovHoles ( FileName : string;  OpenKind : File_Open_Kind := APPEND_MODE ) ;
+    procedure WriteCovHoles ( LogLevel : LogType ; FileName : string;  OpenKind : File_Open_Kind := APPEND_MODE ) ;
     procedure WriteCovHoles ( FileName : string;  PercentCov : real ; OpenKind : File_Open_Kind := APPEND_MODE ) ;
-    procedure DumpBin ;  -- Development only
+    procedure WriteCovHoles ( LogLevel : LogType ; FileName : string;  PercentCov : real ; OpenKind : File_Open_Kind := APPEND_MODE ) ;
+    procedure DumpBin (LogLevel : LogType := DEBUG) ;  -- Development only
 
-    procedure ReadCovDb (FileName : string; Merge : boolean := FALSE) ;    
+    procedure ReadCovDb (FileName : string; Merge : boolean := FALSE) ;
     procedure WriteCovDb (FileName : string; OpenKind : File_Open_Kind := WRITE_MODE ) ;
     impure function GetErrorCount return integer ;
 
     -- These support usage of cross coverage constants
     -- Also support the older AddBins(GenCross(...)) methodology
     -- which has been replaced by AddCross
-    procedure AddBins (CovBin : CovMatrix2Type) ;
-    procedure AddBins (CovBin : CovMatrix3Type) ;
-    procedure AddBins (CovBin : CovMatrix4Type) ;
-    procedure AddBins (CovBin : CovMatrix5Type) ;
-    procedure AddBins (CovBin : CovMatrix6Type) ;
-    procedure AddBins (CovBin : CovMatrix7Type) ;
-    procedure AddBins (CovBin : CovMatrix8Type) ;
-    procedure AddBins (CovBin : CovMatrix9Type) ;
+    procedure AddCross (CovBin : CovMatrix2Type ; Name : String := "") ;
+    procedure AddCross (CovBin : CovMatrix3Type ; Name : String := "") ;
+    procedure AddCross (CovBin : CovMatrix4Type ; Name : String := "") ;
+    procedure AddCross (CovBin : CovMatrix5Type ; Name : String := "") ;
+    procedure AddCross (CovBin : CovMatrix6Type ; Name : String := "") ;
+    procedure AddCross (CovBin : CovMatrix7Type ; Name : String := "") ;
+    procedure AddCross (CovBin : CovMatrix8Type ; Name : String := "") ;
+    procedure AddCross (CovBin : CovMatrix9Type ; Name : String := "") ;
 
 ------------------------------------------------------------
 -- Remaining are Deprecated
@@ -488,9 +561,21 @@ package CoveragePkg is
     impure function GetCovHole ( ReqHoleNum : integer ; AtLeast : integer ) return RangeArrayType ;
 
     procedure WriteCovHoles ( AtLeast : integer ) ;
+    procedure WriteCovHoles ( LogLevel : LogType ; AtLeast : integer ) ;
     procedure WriteCovHoles ( FileName : string;  AtLeast : integer ; OpenKind : File_Open_Kind := APPEND_MODE ) ;
+    procedure WriteCovHoles ( LogLevel : LogType ; FileName : string;  AtLeast : integer ; OpenKind : File_Open_Kind := APPEND_MODE ) ;
 
-    end protected CovPType ;
+    -- Replaced by a more appropriately named AddCross
+    procedure AddBins (CovBin : CovMatrix2Type ; Name : String := "") ;
+    procedure AddBins (CovBin : CovMatrix3Type ; Name : String := "") ;
+    procedure AddBins (CovBin : CovMatrix4Type ; Name : String := "") ;
+    procedure AddBins (CovBin : CovMatrix5Type ; Name : String := "") ;
+    procedure AddBins (CovBin : CovMatrix6Type ; Name : String := "") ;
+    procedure AddBins (CovBin : CovMatrix7Type ; Name : String := "") ;
+    procedure AddBins (CovBin : CovMatrix8Type ; Name : String := "") ;
+    procedure AddBins (CovBin : CovMatrix9Type ; Name : String := "") ;
+
+  end protected CovPType ;
   ------------------------------------------------------------------------------------------
   --  XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX  CovPType  XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
   --  XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX  CovPType  XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -506,6 +591,13 @@ package CoveragePkg is
     variable ErrorCount : inout integer
   ) ;
 
+  ------------------------------------------------------------
+  -- Experimental.  Intended primarily for development.
+  procedure CompareBins (
+  ------------------------------------------------------------
+    variable Bin1       : inout CovPType ;
+    variable Bin2       : inout CovPType 
+  ) ;
 
   --
   --  Support for AddBins and AddCross
@@ -526,6 +618,17 @@ package CoveragePkg is
   function GenBin(Min, Max : integer) return CovBinType ;
   function GenBin(A : integer) return CovBinType ;
 
+    ------------------------------------------------------------
+  function GenBin(
+  ------------------------------------------------------------
+    AtLeast       : integer ;
+    Weight        : integer ;
+    A             : integer_vector
+  ) return CovBinType ;
+
+  function GenBin ( AtLeast : integer ;  A : integer_vector ) return CovBinType ;
+  function GenBin ( A : integer_vector ) return CovBinType ;
+
 
   ------------------------------------------------------------
   function IllegalBin ( Min, Max, NumBin : integer ) return CovBinType ;
@@ -535,31 +638,13 @@ package CoveragePkg is
   function IllegalBin ( Min, Max : integer ) return CovBinType ;
   function IllegalBin ( A : integer ) return CovBinType ;
 
-
-  ----------------------------------------------------------
-  -- function IgnoreBin (
-  ----------------------------------------------------------
-    -- AtLeast       : integer ;
-    -- Weight        : integer ;
-    -- Min, Max      : integer ;
-    -- NumBin        : integer
-  -- ) return CovBinType ;
-  -- function IgnoreBin (AtLeast : integer ;  Min, Max, NumBin : integer) return CovBinType ;
-
-  -- All items in range in a single CovBin
+  
+-- IgnoreBin should never have an AtLeast parameter
   ------------------------------------------------------------
   function IgnoreBin (Min, Max, NumBin : integer) return CovBinType ;
   ------------------------------------------------------------
-  function IgnoreBin (Min, Max : integer) return CovBinType ;
+  function IgnoreBin (Min, Max : integer) return CovBinType ;  -- All items in range in a single CovBin
   function IgnoreBin (A : integer) return CovBinType ;
-
-
-  ------------------------------------------------------------
-  function GenBin (
-  -- Manual entry format for CovBin within lots of extra parens
-  ------------------------------------------------------------
-    ManualBin    : CovBinManualType
-  ) return CovBinType ;
 
 
   -- With VHDL-2008, there will be one GenCross that returns CovBinType
@@ -664,37 +749,31 @@ package CoveragePkg is
 
 
   ------------------------------------------------------------
-  procedure increment( signal Count : inout integer ) ;
-  procedure increment( signal Count : inout integer ; enable : boolean ) ;
-  procedure increment( signal Count : inout integer ; enable : std_ulogic ) ;
-
-
-  ------------------------------------------------------------
   -- Utilities.  Remove if added to std.standard
   function to_integer ( B : boolean ) return integer ;
   function to_integer ( SL : std_logic ) return integer ;
   function to_integer_vector ( BV : boolean_vector ) return integer_vector ;
   function to_integer_vector ( SLV : std_logic_vector ) return integer_vector ;
+  
+  
+  ------------------------------------------------------------
+  ------------------------------------------------------------
+-- Deprecated:  These are not part of the coverage model
+  
+  procedure increment( signal Count : inout integer ) ;
+  procedure increment( signal Count : inout integer ; enable : boolean ) ;
+  procedure increment( signal Count : inout integer ; enable : std_ulogic ) ;
+
+
 
 
 end package CoveragePkg ;
 
---- //////////////////////////////////////////////////////////////////////////////////////////////
---- //////////////////////////////////////////////////////////////////////////////////////////////
+--- ///////////////////////////////////////////////////////////////////////////
+--- ///////////////////////////////////////////////////////////////////////////
+--- ///////////////////////////////////////////////////////////////////////////
 
 package body CoveragePkg is
-  ------------------------------------------------------------
-  function inside (
-  -- package local
-  ------------------------------------------------------------
-    CovPoint : integer ;
-    BinVal   : RangeType
-  ) return boolean is
-  begin
-    return CovPoint >= BinVal.min and CovPoint <= BinVal.max ;
-  end function inside ;
-
-
   ------------------------------------------------------------
   function inside (
   -- package local
@@ -733,9 +812,9 @@ package body CoveragePkg is
 
 
   ------------------------------------------------------------
-  procedure write ( 
+  procedure write (
     variable buf : inout line ;
-    CovPoint     : integer_vector 
+    CovPoint     : integer_vector
   ) is
   -- package local.  called by ICover
   ------------------------------------------------------------
@@ -747,7 +826,6 @@ package body CoveragePkg is
     end loop ;
     swrite(buf, ")") ;
   end procedure write ;
-
 
   ------------------------------------------------------------
   procedure write ( file f :  text ;  BinVal : RangeArrayType ) is
@@ -765,7 +843,6 @@ package body CoveragePkg is
       end if ;
     end loop ;
   end procedure write ;
-
 
   ------------------------------------------------------------
   procedure write (
@@ -805,60 +882,6 @@ package body CoveragePkg is
     end loop ;
   end procedure WriteBinVal ;
 
-  
-  ------------------------------------------------------------
-  -- package local
-  function failed (InValid : boolean ; Message : string := " ") return boolean is
-  -- Move to TextUtilPkg and make visible?
-  ------------------------------------------------------------
-  begin
-    if InValid then
-      report Message severity failure ;
-    end if ;
-    return InValid ;
-  end function failed ;
-
-
-  ------------------------------------------------------------
-  -- package local
-  procedure EmptyOrCommentLine (
-  -- Better as Function, but not supported in VHDL functions
-  ------------------------------------------------------------
-    variable L     : InOut line ;
-    variable Empty : out   boolean
-  ) is
-    variable Valid : boolean ;
-    variable Char  : character ;
-    constant NBSP  : CHARACTER := CHARACTER'val(160);  -- space character
-  begin
-    Empty := TRUE ;
-
-    -- if line empty (null or 0 length), Empty = TRUE
-    if L = null or L.all'length = 0 then
-      return ;
-    end if ;
-
-    -- if line starts with '#', empty = TRUE
-    if L.all(1) = '#' then
-      return ;
-    end if ;
-
-    -- if line starts with '--', empty = TRUE
-    if L.all'length >= 2 and L.all(1) = '-' and L.all(2) = '-' then
-      return ;
-    end if ;
-
-    -- Otherwise, remove white space and check for end of line
-    -- Code borrowed from David Bishop, skip_whitespace
-    WhiteSpLoop : while L /= null and L.all'length > 0 loop
-      if (L.all(1) = ' ' or L.all(1) = NBSP or L.all(1) = HT) then
-        read (L, Char, Valid) ;
-      else
-        Empty := FALSE ;
-        exit WhiteSpLoop ;
-      end if ;
-    end loop WhiteSpLoop ;
-  end procedure EmptyOrCommentLine ;
 
   ------------------------------------------------------------
   -- package local for now
@@ -879,7 +902,6 @@ package body CoveragePkg is
     end loop ;
     Valid := ReadValid ;
   end procedure read ;
-
 
 
   -- ------------------------------------------------------------
@@ -961,7 +983,7 @@ package body CoveragePkg is
 
   -- ------------------------------------------------------------
   function ConcatenateBins (
-  -- package local, used by AddCross
+  -- package local, used by AddCross and GenCross
   -- ------------------------------------------------------------
     BinIndex : integer_vector ;
     Bin1, Bin2, Bin3, Bin4, Bin5, Bin6, Bin7, Bin8, Bin9, Bin10, Bin11,
@@ -1012,7 +1034,10 @@ package body CoveragePkg is
         when 18 =>  result(i) := aBin18(aBinIndex(i)) ;
         when 19 =>  result(i) := aBin19(aBinIndex(i)) ;
         when 20 =>  result(i) := aBin20(aBinIndex(i)) ;
-        when others =>  report "ConcatenateBins: More than 20 bins not supported" severity failure ;
+        when others =>  
+          -- pure functions cannot use alert and/or print
+          report "CoveragePkg.AddCross: More than 20 bins not supported"
+            severity FAILURE ;
       end case ;
     end loop ;
     return result ;
@@ -1095,7 +1120,21 @@ package body CoveragePkg is
     return result ;
   end function MergeWeight ;
 
+  
+  ------------------------------------------------------------  VendorCov
+  -- VendorCov Conversion for Vendor supported functional coverage modeling
+  function ToVendorCovBinVal (BinVal : RangeArrayType) return VendorCovRangeArrayType is
+  ------------------------------------------------------------
+    variable VendorCovBinVal :  VendorCovRangeArrayType(BinVal'range);
+  begin                                                        -- VendorCov
+    for ArrIdx in BinVal'LEFT to BinVal'RIGHT loop             -- VendorCov
+      VendorCovBinVal(ArrIdx) := (min => BinVal(ArrIdx).min,   -- VendorCov
+                                  max => BinVal(ArrIdx).max) ; -- VendorCov
+    end loop;                                                  -- VendorCov
+    return VendorCovBinVal ; 
+  end function ToVendorCovBinVal ;
 
+  
   ------------------------------------------------------------
   function ToMinPoint (A : RangeArrayType) return integer is
   -- Used in testing
@@ -1145,6 +1184,31 @@ package body CoveragePkg is
     result := VectorVal ;
   end procedure ToRandPoint ;
 
+  ------------------------------------------------------------
+  -- Local.  Get first word from a string
+  function GetWord (Message : string) return string is
+  ------------------------------------------------------------
+    alias aMessage : string( 1 to Message'length) is Message ;
+  begin
+    for i in aMessage'range loop
+      if aMessage(i) = ' ' or aMessage(i) = HT then
+        return aMessage(1 to i-1) ;
+      end if ;
+    end loop ;
+    return aMessage ;
+  end function GetWord ;
+  
+    ------------------------------------------------------------
+    -- Local -- long term move to MessagePkg?   Used by WriteCovDb
+    procedure WriteMessage ( file f : text ; variable Message : inout MessagePType ) is
+    ------------------------------------------------------------
+      variable buf : line ;
+    begin
+      for i in 1 to Message.GetCount loop
+        write(buf, string'(Message.Get(i))) ;
+        writeline(f, buf) ;
+      end loop ;
+    end procedure WriteMessage ;
 
   ------------------------------------------------------------------------------------------
   --  XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX  CovPType  XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -1154,8 +1218,12 @@ package body CoveragePkg is
   type CovPType is protected body
 
     -- Name Data Structure
-    variable Message : MessagePType ; 
+    variable CovNameVar         : NamePType ;
+    variable CovMessageVar      : MessagePType ;
     
+    -- Handle into Vendor Data Structure                            -- VendorCov
+    variable VendorCovHandleVar : VendorCovHandleType := 0 ;        -- VendorCov
+
     -- CoverageBin Data Structures
     type RangeArrayPtrType is access RangeArrayType ;
 
@@ -1167,6 +1235,7 @@ package body CoveragePkg is
       Weight        : integer ;
       PercentCov    : real ;
       OrderCount    : integer ;
+      Name          : line ;
     end record CovBinBaseTempType ;
     type CovBinTempType is array (natural range <>) of CovBinBaseTempType ;
     type CovBinPtrType is access CovBinTempType ;
@@ -1180,6 +1249,7 @@ package body CoveragePkg is
 
     -- Internal Modes and Names
     variable IllegalMode   : IllegalModeType := ILLEGAL_ON ;
+    variable IllegalModeLevel : AlertType    := ERROR ; 
     variable WeightMode    : WeightModeType  := AT_LEAST ;
     variable WeightScale   : real            := 1.0 ;
 
@@ -1194,12 +1264,23 @@ package body CoveragePkg is
     variable RV : RandomPType ;
     variable RvSeedInit : boolean := FALSE ;
 
-
     file WriteBinFile : text ;
     variable WriteBinFileInit : boolean := FALSE ;
+    variable UsingLocalFile   : boolean := FALSE ;
+    variable AlertLogIDVar    : AlertLogIDType := OSVVM_ALERTLOG_ID ;
+
     -- file WriteCovDbFile : text ;
     -- variable WriteCovDbFileInit : boolean := FALSE ;
 
+    -- Local WriteBin and WriteCovHoles formatting settings, defaults determined by CoverageGlobals
+    variable WritePassFailVar   : CovOptionsType := COV_OPT_INIT_PARM_DETECT ;
+    variable WriteBinInfoVar    : CovOptionsType := COV_OPT_INIT_PARM_DETECT ;
+    variable WriteCountVar      : CovOptionsType := COV_OPT_INIT_PARM_DETECT ;
+    variable WriteAnyIllegalVar : CovOptionsType := COV_OPT_INIT_PARM_DETECT ;
+    variable WritePrefixVar     : NamePType ;
+    variable PassNameVar        : NamePType ;
+    variable FailNameVar        : NamePType ;
+    
 
     ------------------------------------------------------------
     procedure FileOpenWriteBin (FileName : string; OpenKind : File_Open_Kind ) is
@@ -1209,7 +1290,6 @@ package body CoveragePkg is
       file_open( WriteBinFile , FileName , OpenKind );
     end procedure FileOpenWriteBin ;
 
-
     ------------------------------------------------------------
     procedure FileCloseWriteBin is
     ------------------------------------------------------------
@@ -1218,9 +1298,34 @@ package body CoveragePkg is
       file_close( WriteBinFile) ;
     end procedure FileCloseWriteBin ;
 
-
+    ------------------------------------------------------------
+    procedure SetAlertLogID (A : AlertLogIDType) is
+    ------------------------------------------------------------
+    begin
+      AlertLogIDVar := A ;
+    end procedure SetAlertLogID ;
+    
+    ------------------------------------------------------------
+    procedure SetAlertLogID(Name : string ; ParentID : AlertLogIDType := ALERTLOG_BASE_ID ; CreateHierarchy : Boolean := TRUE) is
+    ------------------------------------------------------------
+    begin
+      AlertLogIDVar := GetAlertLogID(Name, ParentID, CreateHierarchy) ;
+      if not RvSeedInit then  -- Init seed if not initialized
+        RV.InitSeed(Name) ;
+        RvSeedInit := TRUE ;
+      end if ;
+    end procedure SetAlertLogID ;
+    
+    ------------------------------------------------------------
+    impure function GetAlertLogID return AlertLogIDType is
+    ------------------------------------------------------------
+    begin
+      return AlertLogIDVar ; 
+    end function GetAlertLogID ;
+    
+    
 --      ------------------------------------------------------------
---      procedure FileOpenWriteCovDb (FileName : string; OpenKind : File_Open_Kind ) is
+--      procedure FileOpen (FileName : string; OpenKind : File_Open_Kind ) is
 --      ------------------------------------------------------------
 --      begin
 --        WriteCovDbFileInit := TRUE ;
@@ -1236,77 +1341,149 @@ package body CoveragePkg is
 --      end procedure FileCloseWriteCovDb ;
 
     ------------------------------------------------------------
+    procedure SetName (Name : String) is
+    ------------------------------------------------------------
+    begin
+      CovNameVar.Set(Name) ;
+      -- Update if name updated after model created     -- VendorCov
+      if IsInitialized then                             -- VendorCov
+        VendorCovSetName(VendorCovHandleVar, Name) ;    -- VendorCov
+      end if ;                                          -- VendorCov
+      if not RvSeedInit then  -- Init seed if not initialized
+        RV.InitSeed(Name) ;
+        RvSeedInit := TRUE ;
+      end if ;
+    end procedure SetName ;
+
+    ------------------------------------------------------------
+    impure function SetName (Name : String) return string is
+    ------------------------------------------------------------
+    begin
+      SetName(Name) ; -- call procedure above
+      return Name ; 
+    end function SetName ;
+
+    ------------------------------------------------------------
+    impure function GetName return String is
+    ------------------------------------------------------------
+    begin
+      return CovNameVar.Get("") ;
+    end function GetName ;
+
+    ------------------------------------------------------------
+    impure function GetCovModelName return String is
+    ------------------------------------------------------------
+    begin
+      if CovNameVar.IsSet then
+        -- return Name if set
+        return CovNameVar.Get ;
+      elsif AlertLogIDVar /= OSVVM_ALERTLOG_ID then
+        -- otherwise return AlertLogName if it is set
+        return GetAlertLogName(AlertLogIDVar) ;
+      elsif CovMessageVar.IsSet then
+        -- otherwise Get the first word of the Message if it is set
+        return GetWord(string'(CovMessageVar.Get(1))) ;
+      else
+        return "" ;
+      end if ;
+    end function GetCovModelName ;
+
+    ------------------------------------------------------------
+    impure function GetNamePlus(prefix, suffix : string) return String is
+    ------------------------------------------------------------
+    begin
+      if CovNameVar.IsSet then
+        -- return Name if set
+        return prefix & CovNameVar.Get & suffix ;
+      elsif AlertLogIDVar = OSVVM_ALERTLOG_ID and CovMessageVar.IsSet then
+        -- If AlertLogID not set, then use Message
+        return prefix & GetWord(string'(CovMessageVar.Get(1))) & suffix ;
+      else
+        return "" ;
+      end if ;
+    end function GetNamePlus ;
+
+    ------------------------------------------------------------
+    procedure SetMessage (Message : String) is
+    ------------------------------------------------------------
+    begin
+      CovMessageVar.Set(Message) ;
+      -- VendorCov update if name updated after model created
+      if IsInitialized then                                         -- VendorCov
+        -- Refine this?   If CovNameVar or AlertLogIDName is set,   -- VendorCov
+        -- it may be set to the same name again.                    -- VendorCov
+        VendorCovSetName(VendorCovHandleVar, GetCovModelName) ;     -- VendorCov
+      end if ;                                                      -- VendorCov
+      if not RvSeedInit then  -- Init seed if not initialized
+        RV.InitSeed(Message) ;
+        RvSeedInit := TRUE ;
+      end if ;
+    end procedure SetMessage ;
+
+    ------------------------------------------------------------
     procedure SetIllegalMode (A : IllegalModeType) is
     ------------------------------------------------------------
     begin
       IllegalMode := A ;
+      if IllegalMode = ILLEGAL_FAILURE then 
+        IllegalModeLevel := FAILURE ; 
+      else 
+        IllegalModeLevel := ERROR ; 
+      end if ; 
     end procedure SetIllegalMode ;
 
     ------------------------------------------------------------
     procedure SetWeightMode (A : WeightModeType;  Scale : real := 1.0) is
     ------------------------------------------------------------
-      variable buf : line ; 
+      variable buf : line ;
     begin
       WeightMode := A ;
       WeightScale := Scale ;
 
       if (WeightMode = REMAIN_EXP) and (WeightScale > 2.0) then
-          swrite(buf, "%%WARNING:  WeightScale > 2.0 and large Counts can cause RandCovPoint to fail due to integer values out of range") ;
-          writeline(OUTPUT, buf) ; 
+        Alert(AlertLogIDVar, GetNamePlus(prefix => "in ", suffix => ", ") & "CoveragePkg.SetWeightMode:" &  
+                      " WeightScale > 2.0 and large Counts can cause RandCovPoint to fail due to integer values out of range", WARNING) ;
       end if ;
       if (WeightScale < 1.0) and (WeightMode = REMAIN_WEIGHT or WeightMode = REMAIN_SCALED) then
-        report "WeightScale must be > 1.0 when WeightMode = REMAIN_WEIGHT or WeightMode = REMAIN_SCALED"
-          severity failure ;
+        Alert(AlertLogIDVar, GetNamePlus(prefix => "in ", suffix => ", ") & "CoveragePkg.SetWeightMode:" & 
+                      " WeightScale must be > 1.0 when WeightMode = REMAIN_WEIGHT or WeightMode = REMAIN_SCALED", FAILURE) ;
         WeightScale := 1.0 ;
       end if;
       if WeightScale <= 0.0 then
-        report "WeightScale must be > 0.0" severity failure ;
+        Alert(AlertLogIDVar, GetNamePlus(prefix => "in ", suffix => ", ") & "CoveragePkg.SetWeightMode:" & 
+                      " WeightScale must be > 0.0", FAILURE) ;
         WeightScale := 1.0 ;
       end if;
     end procedure SetWeightMode ;
 
     ------------------------------------------------------------
-    procedure SetName (NameIn : String) is
-    ------------------------------------------------------------
-    begin
-      Message.SetName(NameIn) ; 
-      if not RvSeedInit then  -- Init seed if not initialized
-        RV.InitSeed(NameIn) ;
-        RvSeedInit := TRUE ;
-      end if ;
-    end procedure SetName ; 
-
-    ------------------------------------------------------------
-    procedure SetMessage (MessageIn : String) is
-    ------------------------------------------------------------
-    begin
-      Message.SetMessage(MessageIn) ; 
-      if not RvSeedInit then  -- Init seed if not initialized
-        RV.InitSeed(MessageIn) ;
-        RvSeedInit := TRUE ;
-      end if ;
-    end procedure SetMessage ; 
-
-    ------------------------------------------------------------
     -- pt local for now -- file formal parameter not allowed with a public method
-    procedure WriteBinName ( file f : text ; S : string ; Prefix : string := "%%" ) is
+    procedure WriteBinName ( file f : text ; S : string ; Prefix : string := "%% " ) is
     ------------------------------------------------------------
       variable MessageCount : integer ;
-      variable buf : line ; 
+      variable MessageIndex : integer := 1 ;
+      variable buf : line ;
     begin
-      MessageCount := Message.GetMessageCount ; 
+      MessageCount := CovMessageVar.GetCount ;
       if MessageCount = 0 then
-        if Prefix'length + S'length > 0 then
-          write(buf, Prefix & S) ; 
-          writeline(f, buf) ; 
-          -- write(f, Prefix & S & LF);
-        end if ;
+        write(buf, Prefix & S & GetCovModelName) ; -- Print name when no message
+        writeline(f, buf) ;
       else
-        write(buf, Prefix & S & Message.GetMessage(1)) ; 
-        writeline(f, buf) ; 
-        for i in 2 to MessageCount loop 
-          write(buf, Prefix & Message.GetMessage(i)) ; 
-          writeline(f, buf) ; 
+        if CovNameVar.IsSet then
+          -- Print Name if set
+          write(buf, Prefix & S & CovNameVar.Get) ;
+        elsif AlertLogIDVar /= OSVVM_ALERTLOG_ID then
+          -- otherwise Print AlertLogName if it is set
+          write(buf, Prefix & S & string'(GetAlertLogName(AlertLogIDVar))) ;
+        else 
+          -- otherwise print the first line of the message
+          MessageIndex := 2 ; 
+          write(buf, Prefix & S & string'(CovMessageVar.Get(1))) ;
+        end if ; 
+        writeline(f, buf) ;
+        for i in MessageIndex to MessageCount loop
+          write(buf, Prefix & string'(CovMessageVar.Get(i))) ;
+          writeline(f, buf) ;
         end loop ;
       end if ;
     end procedure WriteBinName ;
@@ -1315,14 +1492,14 @@ package body CoveragePkg is
     procedure DeallocateMessage is
     ------------------------------------------------------------
     begin
-      Message.DeallocateMessage ; 
+      CovMessageVar.Deallocate ;
     end procedure DeallocateMessage ;
 
     ------------------------------------------------------------
     procedure DeallocateName is
     ------------------------------------------------------------
     begin
-      Message.DeallocateName ; 
+      CovNameVar.Clear ;
     end procedure DeallocateName ;
 
     ------------------------------------------------------------
@@ -1341,7 +1518,8 @@ package body CoveragePkg is
         CovThreshold := Percent + 0.0001 ; -- used in less than
       else
         CovThreshold := 0.0001 ; -- used in less than
-        report "Invalid Threshold Value " & real'image(Percent) severity failure ;
+        Alert(AlertLogIDVar, GetNamePlus(prefix => "in ", suffix => ", ") & "CoveragePkg.SetCovThreshold:" &  
+                      " Invalid Threshold Value " & real'image(Percent), FAILURE) ;
       end if ;
     end procedure SetCovThreshold ;
 
@@ -1382,6 +1560,15 @@ package body CoveragePkg is
     end procedure InitSeed ;
 
     ------------------------------------------------------------
+    impure function InitSeed (S : string ) return string is
+    ------------------------------------------------------------
+    begin
+      RV.InitSeed(S) ;
+      RvSeedInit := TRUE ;
+      return S ; 
+    end function InitSeed ;
+
+    ------------------------------------------------------------
     procedure InitSeed (I : integer ) is
     ------------------------------------------------------------
     begin
@@ -1403,6 +1590,41 @@ package body CoveragePkg is
     begin
       return RV.GetSeed ;
     end function GetSeed ;
+
+    ------------------------------------------------------------
+    procedure SetReportOptions (
+    ------------------------------------------------------------
+      WritePassFail   : CovOptionsType := COV_OPT_INIT_PARM_DETECT ;
+      WriteBinInfo    : CovOptionsType := COV_OPT_INIT_PARM_DETECT ;
+      WriteCount      : CovOptionsType := COV_OPT_INIT_PARM_DETECT ;
+      WriteAnyIllegal : CovOptionsType := COV_OPT_INIT_PARM_DETECT ;
+      WritePrefix     : string := OSVVM_STRING_INIT_PARM_DETECT ;
+      PassName        : string := OSVVM_STRING_INIT_PARM_DETECT ;
+      FailName        : string := OSVVM_STRING_INIT_PARM_DETECT
+    ) is
+    begin
+      if WritePassFail /= COV_OPT_INIT_PARM_DETECT then
+        WritePassFailVar   := WritePassFail ;
+      end if ;
+      if WriteBinInfo /= COV_OPT_INIT_PARM_DETECT then
+        WriteBinInfoVar    := WriteBinInfo ;
+      end if ;
+      if WriteCount /= COV_OPT_INIT_PARM_DETECT then
+        WriteCountVar      := WriteCount ;
+      end if ;
+      if WriteAnyIllegal /= COV_OPT_INIT_PARM_DETECT then
+        WriteAnyIllegalVar := WriteAnyIllegal ;
+      end if ;
+      if WritePrefix /= OSVVM_STRING_INIT_PARM_DETECT then
+        WritePrefixVar.Set(WritePrefix) ; 
+      end if ;
+      if PassName /= OSVVM_STRING_INIT_PARM_DETECT then
+        PassNameVar.Set(PassName) ; 
+      end if ;
+      if FailName /= OSVVM_STRING_INIT_PARM_DETECT then
+        FailNameVar.Set(FailName) ; 
+      end if ;
+    end procedure SetReportOptions ;
 
 
     ------------------------------------------------------------
@@ -1431,9 +1653,8 @@ package body CoveragePkg is
       if NumBins = 0 then
         BinValLength := CurBinValLength ; -- number of points in cross
       else
-        assert BinValLength = CurBinValLength
-          report Caller & ": Cross bins with different sizes prohibited"
-          severity failure ;
+        AlertIf(AlertLogIDVar, BinValLength /= CurBinValLength, GetNamePlus(prefix => "in ", suffix => ", ") & "CoveragePkg." & Caller & ":" & 
+        " Cross coverage bins of different dimensions prohibited", FAILURE) ; 
       end if;
     end procedure CheckBinValLength ;
 
@@ -1490,37 +1711,47 @@ package body CoveragePkg is
 
     ------------------------------------------------------------
     --  pt local
-    -- Inserts values into a new bin.  
-    -- Called by InsertBin 
+    -- Inserts values into a new bin.
+    -- Called by InsertBin
     procedure InsertNewBin(
       BinVal       : RangeArrayType ;
       Action       : integer ;
       Count        : integer ;
       AtLeast      : integer ;
       Weight       : integer ;
+      Name         : string ;
       PercentCov   : real := 0.0
     ) is
     begin
+      if (not IsInitialized) then                                                              -- VendorCov
+        if (BinVal'length > 1) then  -- Cross Bin                                              -- VendorCov
+          VendorCovHandleVar := VendorCovCrossCreate(GetCovModelName) ;                            -- VendorCov
+        else                                                                                   -- VendorCov
+          VendorCovHandleVar := VendorCovPointCreate(GetCovModelName);                             -- VendorCov
+      	end if;                                                                                -- VendorCov
+      end if;                                                                                  -- VendorCov
+      VendorCovBinAdd(VendorCovHandleVar, ToVendorCovBinVal(BinVal), Action, AtLeast, Name) ;  -- VendorCov
       NumBins := NumBins + 1 ;
       CovBinPtr.all(NumBins).BinVal      := new RangeArrayType'(BinVal) ;
       CovBinPtr.all(NumBins).Action      := Action ;
       CovBinPtr.all(NumBins).Count       := Count ;
       CovBinPtr.all(NumBins).AtLeast     := AtLeast ;
       CovBinPtr.all(NumBins).Weight      := Weight ;
+      CovBinPtr.all(NumBins).Name        := new String'(Name) ;
       CovBinPtr.all(NumBins).PercentCov  := PercentCov ;
       CovBinPtr.all(NumBins).OrderCount  := 0 ;  --- Metrics for evaluating randomization order Temp
     end procedure InsertNewBin ;
 
-    
+
     ------------------------------------------------------------
     --  pt local
-    -- Inserts values into a new bin.  
-    -- Called by InsertBin 
+    -- Inserts values into a new bin.
+    -- Called by InsertBin
     procedure MergeBin (
       Position     : Natural ;
       Count        : integer ;
       AtLeast      : integer ;
-      Weight       : integer 
+      Weight       : integer
     ) is
     begin
       CovBinPtr.all(Position).Count   := CovBinPtr.all(Position).Count + Count ;
@@ -1530,7 +1761,7 @@ package body CoveragePkg is
         real(CovBinPtr.all(Position).Count)*100.0/maximum(real(CovBinPtr.all(Position).AtLeast), 1.0) ;
     end procedure MergeBin ;
 
-    
+
     ------------------------------------------------------------
     --  pt local
     -- All insertion comes here
@@ -1545,65 +1776,70 @@ package body CoveragePkg is
       Count        : integer ;
       AtLeast      : integer ;
       Weight       : integer ;
+      Name         : string ;
       PercentCov   : real := 0.0
     ) is
       variable Position : integer ;
       variable FoundInside : boolean ;
     begin
-      if not MergingEnable then 
-        InsertNewBin(BinVal, Action, Count, AtLeast, Weight, PercentCov) ; 
-        
+      if not MergingEnable then
+        InsertNewBin(BinVal, Action, Count, AtLeast, Weight, Name, PercentCov) ;
+
       else -- handle merging
--- future optimization, FindBinInside only checks against Ignore and Illegal bins     
+-- future optimization, FindBinInside only checks against Ignore and Illegal bins
         FindBinInside(BinVal, Position, FoundInside) ;
-        
-        if not FoundInside then 
-          InsertNewBin(BinVal, Action, Count, AtLeast, Weight, PercentCov) ; 
-          
+
+        if not FoundInside then
+          InsertNewBin(BinVal, Action, Count, AtLeast, Weight, Name, PercentCov) ;
+
         elsif Action = COV_COUNT then
 -- when check only ignore and illegal bins, only action is to drop
           if CovBinPtr.all(Position).Action /= COV_COUNT then
             null ; -- drop count bin when it is inside a Illegal or Ignore bin
-          
-          elsif CovBinPtr.all(Position).BinVal.all = BinVal then
-            -- Bins match, so merge the count values 
-            MergeBin (Position, Count, AtLeast, Weight) ; 
+
+          elsif CovBinPtr.all(Position).BinVal.all = BinVal and CovBinPtr.all(Position).Name.all = Name then
+            -- Bins match, so merge the count values
+            MergeBin (Position, Count, AtLeast, Weight) ;
           else
             -- Bins overlap, but do not match, insert new bin
-            InsertNewBin(BinVal, Action, Count, AtLeast, Weight, PercentCov) ; 
-          end if; 
+            InsertNewBin(BinVal, Action, Count, AtLeast, Weight, Name, PercentCov) ;
+          end if;
 
         elsif Action = COV_IGNORE then
 -- when check only ignore and illegal bins, only action is to report error
           if CovBinPtr.all(Position).Action = COV_COUNT then
-            InsertNewBin(BinVal, Action, Count, AtLeast, Weight, PercentCov) ; 
+            InsertNewBin(BinVal, Action, Count, AtLeast, Weight, Name, PercentCov) ;
           else
-            report "InsertBin (AddBins/AddCross):  ignore bin dropped.  It is a subset of prior bin"  severity error ;
-          end if; 
+            Alert(AlertLogIDVar, GetNamePlus(prefix => "in ", suffix => ", ") & "CoveragePkg.InsertBin (AddBins/AddCross):" &
+                          " ignore bin dropped.  It is a subset of prior bin", ERROR) ;
+          end if;
 
         elsif Action = COV_ILLEGAL then
 -- when check only ignore and illegal bins, only action is to report error
           if CovBinPtr.all(Position).Action = COV_COUNT then
-            InsertNewBin(BinVal, Action, Count, AtLeast, Weight, PercentCov) ; 
+            InsertNewBin(BinVal, Action, Count, AtLeast, Weight, Name, PercentCov) ;
           else
-            report "InsertBin (AddBins/AddCross):  illegal bin dropped.  It is a subset of prior bin"  severity error ;
-          end if; 
+            Alert(AlertLogIDVar, GetNamePlus(prefix => "in ", suffix => ", ") & "CoveragePkg.InsertBin (AddBins/AddCross):" &  
+                          " illegal bin dropped.  It is a subset of prior bin", ERROR) ;
+          end if;
         end if ;
-      end if ; -- merging enabled 
+      end if ; -- merging enabled
     end procedure InsertBin ;
 
 
     ------------------------------------------------------------
     procedure AddBins (
     ------------------------------------------------------------
+      Name    : String ;
       AtLeast : integer ;
       Weight  : integer ;
-      CovBin : CovBinType
+      CovBin  : CovBinType
     ) is
       variable calcAtLeast : integer ;
       variable calcWeight  : integer ;
     begin
       CheckBinValLength( 1, "AddBins") ;
+            
       GrowBins(CovBin'length) ;
       for i in CovBin'range loop
         if CovBin(i).Action = COV_COUNT then
@@ -1618,34 +1854,59 @@ package body CoveragePkg is
           Action   => CovBin(i).Action,
           Count    => CovBin(i).Count,
           AtLeast  => calcAtLeast,
-          Weight   => calcWeight
+          Weight   => calcWeight,
+          Name     => Name
         ) ;
       end loop ;
     end procedure AddBins ;
 
 
     ------------------------------------------------------------
-    procedure AddBins (AtLeast : integer ; CovBin : CovBinType) is
+    procedure AddBins ( Name : String ; AtLeast : integer ; CovBin : CovBinType ) is
     ------------------------------------------------------------
     begin
-      AddBins(AtLeast, 0, CovBin) ;
+      AddBins(Name, AtLeast, 0, CovBin) ;
     end procedure AddBins ;
 
 
-     ------------------------------------------------------------
-    procedure AddBins (CovBin : CovBinType) is
+    ------------------------------------------------------------
+    procedure AddBins (Name : String ;  CovBin : CovBinType) is
     ------------------------------------------------------------
     begin
-      AddBins(0, 0, CovBin) ;
+      AddBins(Name, 0, 0, CovBin) ;
+    end procedure AddBins ;
+
+
+    ------------------------------------------------------------
+    procedure AddBins ( AtLeast : integer ; Weight  : integer ; CovBin : CovBinType ) is
+    ------------------------------------------------------------
+    begin
+      AddBins("", AtLeast, Weight, CovBin) ;
+    end procedure AddBins ;
+
+
+    ------------------------------------------------------------
+    procedure AddBins ( AtLeast : integer ; CovBin : CovBinType ) is
+    ------------------------------------------------------------
+    begin
+      AddBins("", AtLeast, 0, CovBin) ;
+    end procedure AddBins ;
+
+
+    ------------------------------------------------------------
+    procedure AddBins ( CovBin : CovBinType  ) is
+    ------------------------------------------------------------
+    begin
+      AddBins("", 0, 0, CovBin) ;
     end procedure AddBins ;
 
 
     ------------------------------------------------------------
     procedure AddCross(
-    -- Cross existing bins
     ------------------------------------------------------------
-      AtLeast : integer ;
-      Weight  : integer ;
+      Name       : string ;
+      AtLeast    : integer ;
+      Weight     : integer ;
       Bin1, Bin2 : CovBinType ;
       Bin3, Bin4, Bin5, Bin6, Bin7, Bin8, Bin9, Bin10, Bin11, Bin12, Bin13,
       Bin14, Bin15, Bin16, Bin17, Bin18, Bin19, Bin20 : CovBinType := NULL_BIN
@@ -1662,6 +1923,7 @@ package body CoveragePkg is
       variable calcBinVal   : RangeArrayType(BinIndex'range) ;
     begin
       CheckBinValLength( BIN_LENS'length, "AddCross") ;
+      
       GrowBins(NUM_NEW_BINS) ;
       calcCount := 0 ;
       for MatrixIndex in 1 to NUM_NEW_BINS loop
@@ -1673,7 +1935,7 @@ package body CoveragePkg is
         calcBinVal   := MergeBinVal(CrossBins) ;
         calcAtLeast  := MergeAtLeast( calcAction, AtLeast, CrossBins) ;
         calcWeight   := MergeWeight ( calcAction, Weight,  CrossBins) ;
-        InsertBin(calcBinVal, calcAction, calcCount, calcAtLeast, calcWeight) ;
+        InsertBin(calcBinVal, calcAction, calcCount, calcAtLeast, calcWeight, Name) ;
         IncBinIndex( BinIndex, BIN_LENS) ; -- increment right most one, then if overflow, increment next
       end loop ;
     end procedure AddCross ;
@@ -1681,15 +1943,15 @@ package body CoveragePkg is
 
     ------------------------------------------------------------
     procedure AddCross(
-    -- Cross existing bins
     ------------------------------------------------------------
-      AtLeast : integer ;
+      Name       : string ;
+      AtLeast    : integer ;
       Bin1, Bin2 : CovBinType ;
       Bin3, Bin4, Bin5, Bin6, Bin7, Bin8, Bin9, Bin10, Bin11, Bin12, Bin13,
       Bin14, Bin15, Bin16, Bin17, Bin18, Bin19, Bin20 : CovBinType := NULL_BIN
     ) is
     begin
-      AddCross(AtLeast, 0,
+      AddCross(Name, AtLeast, 0,
            Bin1, Bin2, Bin3, Bin4, Bin5, Bin6, Bin7, Bin8, Bin9, Bin10, Bin11,
            Bin12, Bin13, Bin14, Bin15, Bin16, Bin17, Bin18, Bin19, Bin20
         ) ;
@@ -1698,14 +1960,62 @@ package body CoveragePkg is
 
     ------------------------------------------------------------
     procedure AddCross(
-    -- Cross existing bins
+    ------------------------------------------------------------
+      Name       : string ;
+      Bin1, Bin2 : CovBinType ;
+      Bin3, Bin4, Bin5, Bin6, Bin7, Bin8, Bin9, Bin10, Bin11, Bin12, Bin13,
+      Bin14, Bin15, Bin16, Bin17, Bin18, Bin19, Bin20 : CovBinType := NULL_BIN
+    ) is
+    begin
+      AddCross(Name, 0, 0,
+           Bin1, Bin2, Bin3, Bin4, Bin5, Bin6, Bin7, Bin8, Bin9, Bin10, Bin11,
+           Bin12, Bin13, Bin14, Bin15, Bin16, Bin17, Bin18, Bin19, Bin20
+        ) ;
+    end procedure AddCross ;
+
+
+    ------------------------------------------------------------
+    procedure AddCross(
+    ------------------------------------------------------------
+      AtLeast    : integer ;
+      Weight     : integer ;
+      Bin1, Bin2 : CovBinType ;
+      Bin3, Bin4, Bin5, Bin6, Bin7, Bin8, Bin9, Bin10, Bin11, Bin12, Bin13,
+      Bin14, Bin15, Bin16, Bin17, Bin18, Bin19, Bin20 : CovBinType := NULL_BIN
+    ) is
+    begin
+      AddCross("", AtLeast, Weight,
+           Bin1, Bin2, Bin3, Bin4, Bin5, Bin6, Bin7, Bin8, Bin9, Bin10, Bin11,
+           Bin12, Bin13, Bin14, Bin15, Bin16, Bin17, Bin18, Bin19, Bin20
+        ) ;
+    end procedure AddCross ;
+
+
+    ------------------------------------------------------------
+    procedure AddCross(
+    ------------------------------------------------------------
+      AtLeast    : integer ;
+      Bin1, Bin2 : CovBinType ;
+      Bin3, Bin4, Bin5, Bin6, Bin7, Bin8, Bin9, Bin10, Bin11, Bin12, Bin13,
+      Bin14, Bin15, Bin16, Bin17, Bin18, Bin19, Bin20 : CovBinType := NULL_BIN
+    ) is
+    begin
+      AddCross("", AtLeast, 0,
+           Bin1, Bin2, Bin3, Bin4, Bin5, Bin6, Bin7, Bin8, Bin9, Bin10, Bin11,
+           Bin12, Bin13, Bin14, Bin15, Bin16, Bin17, Bin18, Bin19, Bin20
+        ) ;
+    end procedure AddCross ;
+
+
+    ------------------------------------------------------------
+    procedure AddCross(
     ------------------------------------------------------------
       Bin1, Bin2 : CovBinType ;
       Bin3, Bin4, Bin5, Bin6, Bin7, Bin8, Bin9, Bin10, Bin11, Bin12, Bin13,
       Bin14, Bin15, Bin16, Bin17, Bin18, Bin19, Bin20 : CovBinType := NULL_BIN
     ) is
     begin
-      AddCross(0, 0,
+      AddCross("", 0, 0,
            Bin1, Bin2, Bin3, Bin4, Bin5, Bin6, Bin7, Bin8, Bin9, Bin10, Bin11,
            Bin12, Bin13, Bin14, Bin15, Bin16, Bin17, Bin18, Bin19, Bin20
         ) ;
@@ -1718,9 +2028,11 @@ package body CoveragePkg is
     begin
       for i in 1 to NumBins loop
         deallocate(CovBinPtr(i).BinVal) ;
+        deallocate(CovBinPtr(i).Name) ;
       end loop ;
       deallocate(CovBinPtr) ;
-      Message.Deallocate ; 
+      DeallocateName ;
+      DeallocateMessage ;
       -- Restore internal variables to their default values
       NumBins := 0 ;
       OrderCount := 0 ;
@@ -1733,7 +2045,15 @@ package body CoveragePkg is
       CovTarget     := 100.0 ;
       MergingEnable := FALSE ;
       CountMode     := COUNT_FIRST ;
+      AlertLogIDVar := OSVVM_ALERTLOG_ID ;
       -- RvSeedInit    := FALSE ;
+      WritePassFailVar   := COV_OPT_INIT_PARM_DETECT ;
+      WriteBinInfoVar    := COV_OPT_INIT_PARM_DETECT ;
+      WriteCountVar      := COV_OPT_INIT_PARM_DETECT ;
+      WriteAnyIllegalVar := COV_OPT_INIT_PARM_DETECT ;
+      WritePrefixVar.deallocate ; 
+      PassNameVar.deallocate ; 
+      FailNameVar.deallocate ; 
     end procedure deallocate ;
 
 
@@ -1741,27 +2061,30 @@ package body CoveragePkg is
     -- Local
     procedure ICoverIndex( Index : integer ; CovPoint : integer_vector ) is
     ------------------------------------------------------------
-      variable buf : line ; 
+      variable buf : line ;
     begin
       -- Update Count, PercentCov
       CovBinPtr(Index).Count := CovBinPtr(Index).Count + CovBinPtr(Index).action ;
+      VendorCovBinInc(VendorCovHandleVar, Index);   -- VendorCov
       CovBinPtr(Index).PercentCov := real(CovBinPtr(Index).Count)*100.0/maximum(real(CovBinPtr(Index).AtLeast), 1.0) ;
       -- OrderCount handling - Statistics
       OrderCount := OrderCount + 1 ;
       CovBinPtr(Index).OrderCount := OrderCount + CovBinPtr(Index).OrderCount ;
-      if CovBinPtr(Index).action = COV_ILLEGAL and IllegalMode /= ILLEGAL_OFF then
-        write(buf, "%% " & Message.GetName & " Illegal Value: " ) ;
-        if CovPoint = NULL_INTV then
-          swrite(buf, "LastIndex Value") ; 
-        else 
-          write(buf, CovPoint) ;
-        end if ;
-        write(buf, " is in an illegal Bin. " & "Time: " & time'image(now)) ;
-        writeline(OUTPUT, buf) ; 
-        if IllegalMode = ILLEGAL_FAILURE then
-          report Message.GetName & " Illegal Value" severity failure ;
-        end if ;
-      end if ;
+      if CovBinPtr(Index).action = COV_ILLEGAL then
+        if IllegalMode /= ILLEGAL_OFF then
+          if CovPoint = NULL_INTV then
+            alert(AlertLogIDVar, GetNamePlus(prefix => "in ", suffix => ", ") & "CoveragePkg.ICoverLast:" & 
+                          " Value randomized is in an illegal bin.", IllegalModeLevel) ; 
+          else
+            write(buf, CovPoint) ; 
+            alert(AlertLogIDVar, GetNamePlus(prefix => "in ", suffix => ", ") & "CoveragePkg.ICover:" &  
+                          " Value " & buf.all & " is in an illegal bin.", IllegalModeLevel) ; 
+            deallocate(buf) ; 
+          end if ; 
+        else
+          IncAlertCount(AlertLogIDVar, ERROR) ; -- silent alert.
+        end if ; 
+      end if ; 
     end procedure ICoverIndex ;
 
 
@@ -1784,26 +2107,27 @@ package body CoveragePkg is
     ------------------------------------------------------------
     procedure ICover( CovPoint : integer_vector) is
     ------------------------------------------------------------
-      variable Found : boolean := FALSE ;
     begin
-      if CountMode = COUNT_FIRST and inside(CovPoint, CovBinPtr(LastIndex).BinVal.all) then
-        ICoverIndex(LastIndex, CovPoint) ; 
-        Found := TRUE ; 
-      end if; 
-      if not Found then 
+      if CovPoint'length /= BinValLength then
+        Alert(AlertLogIDVar, GetNamePlus(prefix => "in ", suffix => ", ") & "CoveragePkg." &  
+        " ICover: CovPoint length = " & to_string(CovPoint'length) &
+        "  does not match Coverage Bin dimensions = " & to_string(BinValLength), FAILURE) ; 
+      elsif CountMode = COUNT_FIRST and inside(CovPoint, CovBinPtr(LastIndex).BinVal.all) then
+        ICoverIndex(LastIndex, CovPoint) ;
+      else
         CovLoop : for i in 1 to NumBins loop
           -- skip this CovBin if CovPoint is not in it
           next CovLoop when not inside(CovPoint, CovBinPtr(i).BinVal.all) ;
           -- Mark Covered
-          ICoverIndex(i, CovPoint) ; 
+          ICoverIndex(i, CovPoint) ;
           exit CovLoop when CountMode = COUNT_FIRST ;   -- only find first one
         end loop CovLoop ;
-      end if ; 
+      end if ;
      end procedure ICover ;
 
 
     ------------------------------------------------------------
-    procedure SetCovZero is
+    procedure ClearCov is
     ------------------------------------------------------------
     begin
       for i in 1 to NumBins loop
@@ -1812,8 +2136,15 @@ package body CoveragePkg is
         CovBinPtr(i).OrderCount := 0 ;
       end loop ;
       OrderCount := 0 ;
-    end procedure SetCovZero ;
+    end procedure ClearCov ;
 
+    ------------------------------------------------------------
+    -- deprecated
+    procedure SetCovZero is
+    ------------------------------------------------------------
+    begin
+      ClearCov ;
+    end procedure SetCovZero ;
 
     ------------------------------------------------------------
     impure function IsInitialized return boolean is
@@ -1873,7 +2204,6 @@ package body CoveragePkg is
       end loop CovLoop ;
       return MinCount ;
     end function GetMinCount ;
-
 
 
     ------------------------------------------------------------
@@ -1946,7 +2276,7 @@ package body CoveragePkg is
     impure function IsCovered ( PercentCov : real ) return boolean is
     ------------------------------------------------------------
     begin
-      -- assert NumBins >= 1 report "IsCovered: Empty Coverage Model" severity failure ;
+      -- AlertIf(NumBins < 1, OSVVM_ALERTLOG_ID, "CoveragePkg.IsCovered: Empty Coverage Model", failure) ;
       return CountCovHoles(PercentCov) = 0 ;
     end function IsCovered ;
 
@@ -1955,7 +2285,7 @@ package body CoveragePkg is
     impure function IsCovered return boolean is
     ------------------------------------------------------------
     begin
-      -- assert NumBins >= 1 report "IsCovered: Empty Coverage Model" severity failure ;
+      -- AlertIf(NumBins < 1, OSVVM_ALERTLOG_ID, "CoveragePkg.IsCovered: Empty Coverage Model", failure) ;
       return CountCovHoles(CovTarget) = 0 ;
     end function IsCovered ;
 
@@ -1968,7 +2298,7 @@ package body CoveragePkg is
       BinLoop : for i in 1 to NumBins loop
         if CovBinPtr(i).action = COV_COUNT then
           ScaledCovGoal := integer(ceil(PercentCov * real(CovBinPtr(i).AtLeast)/100.0)) ;
-          TotalCovGoal := TotalCovGoal + ScaledCovGoal ; 
+          TotalCovGoal := TotalCovGoal + ScaledCovGoal ;
           if CovBinPtr(i).Count <= ScaledCovGoal then
             TotalCovCount := TotalCovCount + CovBinPtr(i).Count ;
           else
@@ -1986,27 +2316,27 @@ package body CoveragePkg is
     ------------------------------------------------------------
       variable TotalCovGoal, TotalCovCount : integer := 0 ;
     begin
-      return GetCov( CovTarget ) ; 
+      return GetCov( CovTarget ) ;
     end function GetCov ;
 
 
     ------------------------------------------------------------
-    impure function GetItemCount return integer is 
+    impure function GetItemCount return integer is
     ------------------------------------------------------------
     begin
-      return ItemCount ; 
-    end function GetItemCount ; 
+      return ItemCount ;
+    end function GetItemCount ;
 
 
     ------------------------------------------------------------
-    impure function GetTotalCovGoal ( PercentCov : real ) return integer is 
+    impure function GetTotalCovGoal ( PercentCov : real ) return integer is
     ------------------------------------------------------------
       variable TotalCovGoal, ScaledCovGoal : integer := 0 ;
     begin
       BinLoop : for i in 1 to NumBins loop
         if CovBinPtr(i).action = COV_COUNT then
           ScaledCovGoal := integer(ceil(PercentCov * real(CovBinPtr(i).AtLeast)/100.0)) ;
-          TotalCovGoal := TotalCovGoal + ScaledCovGoal ; 
+          TotalCovGoal := TotalCovGoal + ScaledCovGoal ;
         end if ;
       end loop BinLoop ;
       return TotalCovGoal ;
@@ -2014,26 +2344,26 @@ package body CoveragePkg is
 
 
     ------------------------------------------------------------
-    impure function GetTotalCovGoal return integer is 
+    impure function GetTotalCovGoal return integer is
     ------------------------------------------------------------
     begin
-      return GetTotalCovGoal(CovTarget) ; 
+      return GetTotalCovGoal(CovTarget) ;
     end function GetTotalCovGoal ;
 
 
     ------------------------------------------------------------
-    impure function GetLastIndex return integer is 
+    impure function GetLastIndex return integer is
     ------------------------------------------------------------
     begin
-      return LastIndex ; 
-    end function GetLastIndex ; 
-    
+      return LastIndex ;
+    end function GetLastIndex ;
+
 
     ------------------------------------------------------------
     impure function GetHoleBinVal ( ReqHoleNum : integer ; PercentCov : real  ) return RangeArrayType is
     ------------------------------------------------------------
       variable HoleCount : integer := 0 ;
-      variable buf : line ; 
+      variable buf : line ;
     begin
       CovLoop : for i in 1 to NumBins loop
         if CovBinPtr(i).action = COV_COUNT and CovBinPtr(i).PercentCov < PercentCov then
@@ -2043,10 +2373,10 @@ package body CoveragePkg is
           end if ;
         end if ;
       end loop CovLoop ;
-      write(buf, "%%Error GetHoleBinVal did not find hole.  " &
-                     "HoleCount = " & integer'image(HoleCount) &
-                     "ReqHoleNum = " & integer'image(ReqHoleNum) & LF) ;
-      writeline(OUTPUT, buf) ; 
+      Alert(AlertLogIDVar, GetNamePlus(prefix => "in ", suffix => ", ") & "CoveragePkg.GetHoleBinVal:" &  
+                    " did not find a coverage hole.  HoleCount = "  & integer'image(HoleCount) &
+                    " ReqHoleNum = " & integer'image(ReqHoleNum), ERROR
+      ) ;
       return CovBinPtr(NumBins).BinVal.all ;
 
     end function GetHoleBinVal ;
@@ -2118,7 +2448,7 @@ package body CoveragePkg is
       variable MaxCovPercent : real ;
       variable MinCovPercent : real ;
     begin
-      ItemCount := ItemCount + 1 ; 
+      ItemCount := ItemCount + 1 ;
       MinCovPercent := GetMinCov ;
       if ThresholdingEnable then
         MaxCovPercent := MinCovPercent + CovThreshold ;
@@ -2148,7 +2478,7 @@ package body CoveragePkg is
       -- Caution:  DistInt can fail when sum(WeightVec) > 2**31
       --           See notes in CalcWeight for REMAIN_EXP
       LastIndex := 1 + RV.DistInt( WeightVec )  ; -- return range 1 to NumBins
-      return LastIndex ; 
+      return LastIndex ;
     end function RandHoleIndex ;
 
 
@@ -2274,7 +2604,7 @@ package body CoveragePkg is
     begin
       return ToRandPoint(GetBinVal(BinIndex)) ;
     end function GetPoint ;
-    
+
 
     ------------------------------------------------------------
     impure function GetMinPoint return integer is
@@ -2459,62 +2789,254 @@ package body CoveragePkg is
       result.Weight  := CovBinPtr(BinIndex).Weight;
       return result ;
     end function GetBin ;
-
+    
+    -- ------------------------------------------------------------
+    impure function GetBinName ( BinIndex : integer; DefaultName : string := "" ) return string is
+    -- ------------------------------------------------------------
+    begin
+      if CovBinPtr(BinIndex).Name.all /= "" then
+        return CovBinPtr(BinIndex).Name.all ;
+      else
+        return DefaultName ;
+      end if;
+    end function GetBinName;
 
     ------------------------------------------------------------
     --  pt local for now -- file formal parameter not allowed with method
-    procedure WriteBin ( file f : text ) is
+    procedure WriteBin (
+      file f : text ;
+      WritePassFail   : CovOptionsType ;
+      WriteBinInfo    : CovOptionsType ;
+      WriteCount      : CovOptionsType ;
+      WriteAnyIllegal : CovOptionsType ;
+      WritePrefix     : string ;
+      PassName        : string ;
+      FailName        : string
+    ) is
     ------------------------------------------------------------
-      variable buf : line ; 
+      variable buf : line ;
     begin
-      WriteBinName(f, "WriteBin: ") ;
       if NumBins < 1 then
-        swrite(buf, "%%FATAL, Coverage Model is empty.  Nothing to print.") ;
-        writeline(f, buf) ; 
-        report "Coverage model is empty.  Nothing to print." severity failure ;
+        if WriteBinFileInit or UsingLocalFile then
+          swrite(buf, WritePrefix & " " & FailName & " ") ;
+          swrite(buf, GetNamePlus(prefix => "in ", suffix => ", ") & "CoveragePkg.WriteBin: Coverage model is empty.  Nothing to print.") ;
+          writeline(f, buf) ;
+        end if ; 
+        Alert(AlertLogIDVar, GetNamePlus(prefix => "in ", suffix => ", ") & "CoveragePkg.WriteBin:" &  
+                      " Coverage model is empty.  Nothing to print.", FAILURE) ;
+        return ;
       end if ;
+      -- Models with Bins
+      WriteBinName(f, "WriteBin: ", WritePrefix) ;
       for i in 1 to NumBins loop      -- CovBinPtr.all'range
-        if CovBinPtr(i).count < 0 then
-          swrite(buf, "%%Illegal Bin:") ;
-          write(buf, CovBinPtr(i).BinVal.all) ;
-          write(buf, "  Count = " & integer'image(-CovBinPtr(i).count)) ;
-          write(buf, "" & LF) ;
-        elsif CovBinPtr(i).action = COV_COUNT then
-          swrite(buf, "%% Bin:") ;
-          write(buf, CovBinPtr(i).BinVal.all) ;
-          write(buf, "  Count = " & integer'image(CovBinPtr(i).count)) ;
-          write(buf, "  AtLeast = " & integer'image(CovBinPtr(i).AtLeast)) ;
-          if WeightMode = WEIGHT or WeightMode = REMAIN_WEIGHT then
-            -- Print Weight only when it is used
-            write(buf, "  Weight = " & integer'image(CovBinPtr(i).Weight)) ;
+        if CovBinPtr(i).action = COV_COUNT or
+           (CovBinPtr(i).action = COV_ILLEGAL and IsEnabled(WriteAnyIllegal)) or
+           CovBinPtr(i).count < 0  -- Illegal bin with errors
+        then
+          -- WriteBin Info
+          swrite(buf, WritePrefix) ;
+          if CovBinPtr(i).Name.all /= "" then
+            swrite(buf, CovBinPtr(i).Name.all & "  ") ;
+          end if ;
+          if IsEnabled(WritePassFail) then
+            -- For illegal bins, AtLeast = 0 and count is negative.
+            if CovBinPtr(i).count >= CovBinPtr(i).AtLeast then
+              swrite(buf, PassName & ' ') ;
+            else
+              swrite(buf, FailName & ' ') ;
+            end if ;
+          end if ;
+          if IsEnabled(WriteBinInfo) then
+            if CovBinPtr(i).action = COV_COUNT then
+              swrite(buf, "Bin:") ;
+            else
+              swrite(buf, "Illegal Bin:") ;
+            end if;
+            write(buf, CovBinPtr(i).BinVal.all) ;
+          end if ;
+          if IsEnabled(WriteCount) then
+            write(buf, "  Count = " & integer'image(abs(CovBinPtr(i).count))) ;
+            write(buf, "  AtLeast = " & integer'image(CovBinPtr(i).AtLeast)) ;
+            if WeightMode = WEIGHT or WeightMode = REMAIN_WEIGHT then
+              -- Print Weight only when it is used
+              write(buf, "  Weight = " & integer'image(CovBinPtr(i).Weight)) ;
+            end if ;
           end if ;
           writeline(f, buf) ;
         end if ;
       end loop ;
-      swrite(buf, "") ; 
+      swrite(buf, "") ;
       writeline(f, buf) ;
     end procedure WriteBin ;
 
-
     ------------------------------------------------------------
-    procedure WriteBin is
+    procedure WriteBin (
     ------------------------------------------------------------
+      WritePassFail   : CovOptionsType := COV_OPT_INIT_PARM_DETECT ;
+      WriteBinInfo    : CovOptionsType := COV_OPT_INIT_PARM_DETECT ;
+      WriteCount      : CovOptionsType := COV_OPT_INIT_PARM_DETECT ;
+      WriteAnyIllegal : CovOptionsType := COV_OPT_INIT_PARM_DETECT ;
+      WritePrefix     : string := OSVVM_STRING_INIT_PARM_DETECT ;
+      PassName        : string := OSVVM_STRING_INIT_PARM_DETECT ;
+      FailName        : string := OSVVM_STRING_INIT_PARM_DETECT
+    ) is
+      constant rWritePassFail   : CovOptionsType := ResolveCovWritePassFail(WritePassFail,     WritePassFailVar) ;
+      constant rWriteBinInfo    : CovOptionsType := ResolveCovWriteBinInfo(WriteBinInfo,       WriteBinInfoVar  ) ;
+      constant rWriteCount      : CovOptionsType := ResolveCovWriteCount(WriteCount,           WriteCountVar    ) ;
+      constant rWriteAnyIllegal : CovOptionsType := ResolveCovWriteAnyIllegal(WriteAnyIllegal, WriteAnyIllegalVar) ;
+      constant rWritePrefix     : string      := ResolveOsvvmWritePrefix(WritePrefix,       WritePrefixVar.GetOpt) ;
+      constant rPassName        : string      := ResolveOsvvmPassName(PassName,             PassNameVar.GetOpt  ) ;
+      constant rFailName        : string      := ResolveOsvvmFailName(FailName,             FailNameVar.GetOpt  ) ;
     begin
-      if WriteBinFileInit then
-        WriteBin(WriteBinFile) ;
+      if WriteBinFileInit then  
+        -- Write to Local WriteBinFile - Deprecated, recommend use TranscriptFile instead
+        WriteBin (
+          f               => WriteBinFile,
+          WritePassFail   => rWritePassFail,
+          WriteBinInfo    => rWriteBinInfo,
+          WriteCount      => rWriteCount,
+          WriteAnyIllegal => rWriteAnyIllegal,
+          WritePrefix     => rWritePrefix,
+          PassName        => rPassName,
+          FailName        => rFailName
+        ) ;
+      elsif IsTranscriptEnabled then 
+        -- Write to TranscriptFile
+        WriteBin (
+          f               => TranscriptFile,
+          WritePassFail   => rWritePassFail,
+          WriteBinInfo    => rWriteBinInfo,
+          WriteCount      => rWriteCount,
+          WriteAnyIllegal => rWriteAnyIllegal,
+          WritePrefix     => rWritePrefix,
+          PassName        => rPassName,
+          FailName        => rFailName
+        ) ;
+        if IsTranscriptMirrored then
+          -- Mirrored to OUTPUT
+          WriteBin (
+            f               => OUTPUT,
+            WritePassFail   => rWritePassFail,
+            WriteBinInfo    => rWriteBinInfo,
+            WriteCount      => rWriteCount,
+            WriteAnyIllegal => rWriteAnyIllegal,
+            WritePrefix     => rWritePrefix,
+            PassName        => rPassName,
+            FailName        => rFailName
+          ) ;
+        end if ; 
       else
-        WriteBin(OUTPUT) ;
+        -- Default Write to OUTPUT
+        WriteBin (
+          f               => OUTPUT,
+          WritePassFail   => rWritePassFail,
+          WriteBinInfo    => rWriteBinInfo,
+          WriteCount      => rWriteCount,
+          WriteAnyIllegal => rWriteAnyIllegal,
+          WritePrefix     => rWritePrefix,
+          PassName        => rPassName,
+          FailName        => rFailName
+        ) ;
       end if ;
+      
     end procedure WriteBin ;
-
-
+    
+    
     ------------------------------------------------------------
-    procedure WriteBin (FileName : string; OpenKind : File_Open_Kind := APPEND_MODE ) is
+    procedure WriteBin (  -- With LogLevel
     ------------------------------------------------------------
-      file BinFile : text open OpenKind is FileName ;
+      LogLevel        : LogType ;
+      WritePassFail   : CovOptionsType := COV_OPT_INIT_PARM_DETECT ;
+      WriteBinInfo    : CovOptionsType := COV_OPT_INIT_PARM_DETECT ;
+      WriteCount      : CovOptionsType := COV_OPT_INIT_PARM_DETECT ;
+      WriteAnyIllegal : CovOptionsType := COV_OPT_INIT_PARM_DETECT ;
+      WritePrefix     : string := OSVVM_STRING_INIT_PARM_DETECT ;
+      PassName        : string := OSVVM_STRING_INIT_PARM_DETECT ;
+      FailName        : string := OSVVM_STRING_INIT_PARM_DETECT
+    ) is
     begin
-      WriteBin(BinFile) ;
+      if IsLogEnabled(AlertLogIDVar, LogLevel) then
+        WriteBin (
+          WritePassFail   => WritePassFail,
+          WriteBinInfo    => WriteBinInfo,
+          WriteCount      => WriteCount,
+          WriteAnyIllegal => WriteAnyIllegal,
+          WritePrefix     => WritePrefix,
+          PassName        => PassName,
+          FailName        => FailName
+        ) ;
+      end if ; 
+    end procedure WriteBin ;  -- With LogLevel
+
+
+    ------------------------------------------------------------
+    procedure WriteBin (
+    ------------------------------------------------------------
+      FileName        : string;
+      OpenKind        : File_Open_Kind := APPEND_MODE ;
+      WritePassFail   : CovOptionsType := COV_OPT_INIT_PARM_DETECT ;
+      WriteBinInfo    : CovOptionsType := COV_OPT_INIT_PARM_DETECT ;
+      WriteCount      : CovOptionsType := COV_OPT_INIT_PARM_DETECT ;
+      WriteAnyIllegal : CovOptionsType := COV_OPT_INIT_PARM_DETECT ;
+      WritePrefix     : string := OSVVM_STRING_INIT_PARM_DETECT ;
+      PassName        : string := OSVVM_STRING_INIT_PARM_DETECT ;
+      FailName        : string := OSVVM_STRING_INIT_PARM_DETECT
+    ) is
+      file LocalWriteBinFile : text open OpenKind is FileName ;
+      constant rWritePassFail   : CovOptionsType := ResolveCovWritePassFail(WritePassFail,     WritePassFailVar) ;
+      constant rWriteBinInfo    : CovOptionsType := ResolveCovWriteBinInfo(WriteBinInfo,       WriteBinInfoVar  ) ;
+      constant rWriteCount      : CovOptionsType := ResolveCovWriteCount(WriteCount,           WriteCountVar    ) ;
+      constant rWriteAnyIllegal : CovOptionsType := ResolveCovWriteAnyIllegal(WriteAnyIllegal, WriteAnyIllegalVar) ;
+      constant rWritePrefix     : string      := ResolveOsvvmWritePrefix(WritePrefix,       WritePrefixVar.GetOpt) ;
+      constant rPassName        : string      := ResolveOsvvmPassName(PassName,             PassNameVar.GetOpt  ) ;
+      constant rFailName        : string      := ResolveOsvvmFailName(FailName,             FailNameVar.GetOpt  ) ;
+    begin
+      UsingLocalFile := TRUE ; 
+      WriteBin (
+        f               => LocalWriteBinFile,
+        WritePassFail   => rWritePassFail,
+        WriteBinInfo    => rWriteBinInfo,
+        WriteCount      => rWriteCount,
+        WriteAnyIllegal => rWriteAnyIllegal,
+        WritePrefix     => rWritePrefix,
+        PassName        => rPassName,
+        FailName        => rFailName
+      );
+      UsingLocalFile := FALSE ; 
     end procedure WriteBin ;
+
+
+    ------------------------------------------------------------
+    procedure WriteBin (  -- With LogLevel
+    ------------------------------------------------------------
+      LogLevel        : LogType ;
+      FileName        : string;
+      OpenKind        : File_Open_Kind := APPEND_MODE ;
+      WritePassFail   : CovOptionsType := COV_OPT_INIT_PARM_DETECT ;
+      WriteBinInfo    : CovOptionsType := COV_OPT_INIT_PARM_DETECT ;
+      WriteCount      : CovOptionsType := COV_OPT_INIT_PARM_DETECT ;
+      WriteAnyIllegal : CovOptionsType := COV_OPT_INIT_PARM_DETECT ;
+      WritePrefix     : string := OSVVM_STRING_INIT_PARM_DETECT ;
+      PassName        : string := OSVVM_STRING_INIT_PARM_DETECT ;
+      FailName        : string := OSVVM_STRING_INIT_PARM_DETECT
+    ) is
+    begin
+      if IsLogEnabled(AlertLogIDVar, LogLevel) then
+        UsingLocalFile := TRUE ; 
+        WriteBin (
+          FileName        => FileName,
+          OpenKind        => OpenKind,
+          WritePassFail   => WritePassFail,
+          WriteBinInfo    => WriteBinInfo,
+          WriteCount      => WriteCount,
+          WriteAnyIllegal => WriteAnyIllegal,
+          WritePrefix     => WritePrefix,
+          PassName        => PassName,
+          FailName        => FailName
+        ) ;
+        UsingLocalFile := FALSE ; 
+      end if ; 
+    end procedure WriteBin ;  -- With LogLevel
 
 
     ------------------------------------------------------------
@@ -2522,14 +3044,18 @@ package body CoveragePkg is
     --  pt local for now -- file formal parameter not allowed with method
     procedure DumpBin ( file f : text ) is
     ------------------------------------------------------------
-      variable buf : line ; 
+      variable buf : line ;
     begin
       WriteBinName(f, "DumpBin: ") ;
       -- if NumBins < 1 then
       --   Write(f, "%%FATAL, Coverage Model is empty.  Nothing to print." & LF ) ;
       -- end if ;
       for i in 1 to NumBins loop      -- CovBinPtr.all'range
-        swrite(buf, "%% Bin:") ;
+        swrite(buf, "%% ") ;
+        if CovBinPtr(i).Name.all /= "" then
+          swrite(buf, CovBinPtr(i).Name.all & "  ") ;
+        end if ;
+        swrite(buf, "Bin:") ;
         write(buf, CovBinPtr(i).BinVal.all) ;
         case CovBinPtr(i).action is
           when COV_COUNT   =>   swrite(buf, "    Count = ") ;
@@ -2553,13 +3079,24 @@ package body CoveragePkg is
 
 
     ------------------------------------------------------------
-    procedure DumpBin is
+    procedure DumpBin (LogLevel : LogType := DEBUG) is
     ------------------------------------------------------------
     begin
-      if WriteBinFileInit then
-        DumpBin(WriteBinFile) ;
-      else
-        DumpBin(OUTPUT) ;
+      if IsLogEnabled(AlertLogIDVar, LogLevel) then
+        if WriteBinFileInit then
+          -- Write to Local WriteBinFile - Deprecated, recommend use TranscriptFile instead
+          DumpBin(WriteBinFile) ;
+        elsif IsTranscriptEnabled then 
+          -- Write to TranscriptFile
+          DumpBin(TranscriptFile) ;
+          if IsTranscriptMirrored then
+            -- Mirrored to OUTPUT
+            DumpBin(OUTPUT) ;
+          end if ; 
+        else
+          -- Default Write to OUTPUT
+          DumpBin(OUTPUT) ;
+        end if ;
       end if ;
     end procedure DumpBin ;
 
@@ -2568,17 +3105,28 @@ package body CoveragePkg is
     --  pt local
     procedure WriteCovHoles ( file f : text;  PercentCov : real := 100.0 ) is
     ------------------------------------------------------------
-      variable buf : line ; 
+      variable buf : line ;
     begin
-      WriteBinName(f, "WriteCovHoles: ") ;
       if NumBins < 1 then
-        swrite(buf, "%%FATAL, Coverage Model is empty.  Nothing to print.") ;
-        writeline(f, buf) ;
-        report "Coverage model is empty.  Nothing to print." severity failure ;
+        if WriteBinFileInit or UsingLocalFile then
+          -- Duplicate Alert in specified file
+          swrite(buf, "%% Alert FAILURE  " & GetNamePlus(prefix => "in ", suffix => ", ") & "CoveragePkg.WriteCovHoles:" &  
+                      " coverage model empty.  Nothing to print.") ; 
+          writeline(f, buf) ;
+        end if ; 
+        Alert(AlertLogIDVar, GetNamePlus(prefix => "in ", suffix => ", ") & "CoveragePkg.WriteCovHoles:" &  
+                      " coverage model empty.  Nothing to print.", FAILURE) ;
+        return ;
       end if ;
+      -- Models with Bins
+      WriteBinName(f, "WriteCovHoles: ") ;
       CovLoop : for i in 1 to NumBins loop
         if CovBinPtr(i).action = COV_COUNT and CovBinPtr(i).PercentCov < PercentCov then
-          swrite(buf, "%% Bin:") ;
+          swrite(buf, "%% ") ;
+          if CovBinPtr(i).Name.all /= "" then
+            swrite(buf, CovBinPtr(i).Name.all & "  ") ;
+          end if ;
+          swrite(buf, "Bin:") ;
           write(buf, CovBinPtr(i).BinVal.all) ;
           write(buf, "  Count = " & integer'image(CovBinPtr(i).Count)) ;
           write(buf, "  AtLeast = " & integer'image(CovBinPtr(i).AtLeast)) ;
@@ -2589,20 +3137,8 @@ package body CoveragePkg is
           writeline(f, buf) ;
         end if ;
       end loop CovLoop ;
-      swrite(buf, "") ; 
+      swrite(buf, "") ;
       writeline(f, buf) ;
-    end procedure WriteCovHoles ;
-
-
-    ------------------------------------------------------------
-    procedure WriteCovHoles is
-    ------------------------------------------------------------
-    begin
-      if WriteBinFileInit then
-        WriteCovHoles(WriteBinFile, CovTarget) ;
-      else
-        WriteCovHoles(OUTPUT, CovTarget) ;
-      end if;
     end procedure WriteCovHoles ;
 
 
@@ -2611,9 +3147,38 @@ package body CoveragePkg is
     ------------------------------------------------------------
     begin
       if WriteBinFileInit then
+        -- Write to Local WriteBinFile - Deprecated, recommend use TranscriptFile instead
         WriteCovHoles(WriteBinFile, PercentCov) ;
+      elsif IsTranscriptEnabled then 
+        -- Write to TranscriptFile
+        WriteCovHoles(TranscriptFile, PercentCov) ;
+        if IsTranscriptMirrored then
+          -- Mirrored to OUTPUT
+          WriteCovHoles(OUTPUT, PercentCov) ;
+        end if ; 
       else
+        -- Default Write to OUTPUT
         WriteCovHoles(OUTPUT, PercentCov) ;
+      end if;
+    end procedure WriteCovHoles ;
+
+    
+    ------------------------------------------------------------
+    procedure WriteCovHoles ( LogLevel : LogType := ALWAYS ) is
+    ------------------------------------------------------------
+    begin
+      if IsLogEnabled(AlertLogIDVar, LogLevel) then
+        WriteCovHoles(CovTarget) ; 
+      end if;
+    end procedure WriteCovHoles ;
+
+    
+    ------------------------------------------------------------
+    procedure WriteCovHoles ( LogLevel : LogType ; PercentCov : real ) is
+    ------------------------------------------------------------
+    begin
+      if IsLogEnabled(AlertLogIDVar, LogLevel) then
+        WriteCovHoles(PercentCov) ;
       end if;
     end procedure WriteCovHoles ;
 
@@ -2623,7 +3188,19 @@ package body CoveragePkg is
     ------------------------------------------------------------
       file CovHoleFile : text open OpenKind is FileName ;
     begin
+      UsingLocalFile := TRUE ; 
       WriteCovHoles(CovHoleFile, CovTarget) ;
+      UsingLocalFile := FALSE ; 
+    end procedure WriteCovHoles ;
+
+
+    ------------------------------------------------------------
+    procedure WriteCovHoles ( LogLevel : LogType ; FileName : string;  OpenKind : File_Open_Kind := APPEND_MODE ) is
+    ------------------------------------------------------------
+    begin
+      if IsLogEnabled(AlertLogIDVar, LogLevel) then
+        WriteCovHoles(FileName, OpenKind) ;
+      end if;
     end procedure WriteCovHoles ;
 
 
@@ -2632,104 +3209,159 @@ package body CoveragePkg is
     ------------------------------------------------------------
       file CovHoleFile : text open OpenKind is FileName ;
     begin
-      WriteCovHoles(CovHoleFile, PercentCov) ;
+        UsingLocalFile := TRUE ; 
+        WriteCovHoles(CovHoleFile, PercentCov) ;
+        UsingLocalFile := FALSE ; 
+    end procedure WriteCovHoles ;
+
+
+    ------------------------------------------------------------
+    procedure WriteCovHoles ( LogLevel : LogType ; FileName : string;  PercentCov : real ; OpenKind : File_Open_Kind := APPEND_MODE ) is
+    ------------------------------------------------------------
+    begin
+      if IsLogEnabled(AlertLogIDVar, LogLevel) then
+        WriteCovHoles(FileName, PercentCov, OpenKind) ;
+      end if;
     end procedure WriteCovHoles ;
 
 
     ------------------------------------------------------------
     --  pt local
-    impure function FindBin (
+    impure function FindExactBin (
+    -- find an exact match to a bin wrt BinVal, Action, AtLeast, Weight, and Name
     ------------------------------------------------------------
       Merge   : boolean ;
 	    BinVal  : RangeArrayType ;
-      Action  : integer
+      Action  : integer ;
+      AtLeast : integer ;
+      Weight  : integer ;
+      Name    : string
     ) return integer is
     begin
-      if Merge then 
+      if Merge then
         for i in 1 to NumBins loop
-          if BinVal = CovBinPtr(i).BinVal.all and Action = CovBinPtr(i).Action then
+          if (BinVal = CovBinPtr(i).BinVal.all) and (Action = CovBinPtr(i).Action) and
+             (AtLeast = CovBinPtr(i).AtLeast) and (Weight = CovBinPtr(i).Weight) and
+             (Name = CovBinPtr(i).Name.all) then
             return i ;
           end if;
         end loop ;
-      end if ; 
+      end if ;
       return 0 ;
-    end function FindBin ;
+    end function FindExactBin ;
+
+
+    ------------------------------------------------------------
+    --  pt local
+    procedure read (
+    ------------------------------------------------------------
+      buf         : inout line ;
+      NamePtr     : inout line ;
+      NameLength  : in integer ;
+      ReadValid   : out boolean
+    ) is
+      variable Name : string(1 to NameLength) ;
+    begin
+      if NameLength > 0 then
+        read(buf, Name, ReadValid) ;
+        NamePtr := new string'(Name) ;
+      else
+        ReadValid := TRUE ;
+        NamePtr := new string'("") ;
+      end if ;
+    end procedure read ;
 
 
     ------------------------------------------------------------
     --  pt local
     procedure ReadCovVars (file CovDbFile : text; Good : out boolean ) is
     ------------------------------------------------------------
-      variable buf              : line ;
-      variable Empty            : boolean ;
-      variable ReadValid        : boolean ;
-      variable GoodLoop1        : boolean ;
-
-      variable iSeed            : RandomSeedType ;
-      variable iIllegalMode     : integer ;
-      variable iWeightMode      : integer ;
-      variable iWeightScale     : real ;
-      variable iCovThreshold    : real ;
-      variable iCountMode       : integer ;
-      variable iNumberOfMessages   : integer ;
-      variable iThresholdingEnable    : boolean ;
-      variable iCovTarget       : real ;
-      variable iMergingEnable   : boolean ;
-
+      variable buf                  : line ;
+      variable Empty                : boolean ;
+      variable MultiLineComment     : boolean := FALSE ;
+      variable ReadValid            : boolean ;
+      variable GoodLoop1            : boolean ;
+      variable iSeed                : RandomSeedType ;
+      variable iIllegalMode         : integer ;
+      variable iWeightMode          : integer ;
+      variable iWeightScale         : real ;
+      variable iCovThreshold        : real ;
+      variable iCountMode           : integer ;
+      variable iNumberOfMessages    : integer ;
+      variable iThresholdingEnable  : boolean ;
+      variable iCovTarget           : real ;
+      variable iMergingEnable       : boolean ;
     begin
-      ReadLoop0 : while not EndFile(CovDbFile) loop
+      -- ReadLoop0 : while not EndFile(CovDbFile) loop
+      ReadLoop0 : loop   -- allows emulation of "return when"
+        -- ReadLine to Get Coverage Model Name, skip blank and comment lines, fails when file empty
+        exit when AlertIf(AlertLogIDVar, EndFile(CovDbFile), GetNamePlus(prefix => "in ", suffix => ", ") &  
+                       "CoveragePkg.ReadCovDb: No Coverage Data to read", FAILURE) ; 
         ReadLine(CovDbFile, buf) ;
-        EmptyOrCommentLine(buf, Empty) ;
+        EmptyOrCommentLine(buf, Empty, MultiLineComment) ;
         next when Empty ;
-        
-        if buf.all /= "CoveragePkg_Not_Named" then
-          Message.SetName(buf.all) ; 
-        end if ; 
+
+        if buf.all /= "Coverage_Model_Not_Named" then
+          SetName(buf.all) ;
+        end if ;
 
         exit ReadLoop0 ;
       end loop ReadLoop0 ;
 
-    
-      ReadLoop1 : while not EndFile(CovDbFile) loop
+
+      -- ReadLoop1 : while not EndFile(CovDbFile) loop
+      ReadLoop1 : loop
+        -- ReadLine to Get Variables, skip blank and comment lines, fails when file empty
+        exit when AlertIf(AlertLogIDVar, EndFile(CovDbFile), GetNamePlus(prefix => "in ", suffix => ", ") & 
+                      "CoveragePkg.ReadCovDb: Coverage DB File Incomplete", FAILURE) ; 
         ReadLine(CovDbFile, buf) ;
-        EmptyOrCommentLine(buf, Empty) ;
+        EmptyOrCommentLine(buf, Empty, MultiLineComment) ;
         next when Empty ;
 
         read(buf, iSeed, ReadValid) ;
-        exit ReadLoop1 when failed(not ReadValid, "ReadCovDb: Failed while reading Seed") ;
+        exit when AlertIfNot(AlertLogIDVar, ReadValid, GetNamePlus(prefix => "in ", suffix => ", ") & 
+                       "CoveragePkg.ReadCovDb: Failed while reading Seed", FAILURE) ;
         RV.SetSeed( iSeed ) ;
         RvSeedInit := TRUE ;
 
         read(buf, iCovThreshold, ReadValid) ;
-        exit ReadLoop1 when failed(not ReadValid, "ReadCovDb: Failed while reading CovThreshold") ;
+        exit when AlertIfNot(AlertLogIDVar, ReadValid, GetNamePlus(prefix => "in ", suffix => ", ") & 
+                       "CoveragePkg.ReadCovDb: Failed while reading CovThreshold", FAILURE) ;
         CovThreshold := iCovThreshold ;
 
         read(buf, iIllegalMode, ReadValid) ;
-        exit ReadLoop1 when failed(not ReadValid, "ReadCovDb: Failed while reading IllegalMode") ;
-        IllegalMode := IllegalModeType'val( iIllegalMode ) ;
+        exit when AlertIfNot(AlertLogIDVar, ReadValid, GetNamePlus(prefix => "in ", suffix => ", ") & 
+                       "CoveragePkg.ReadCovDb: Failed while reading IllegalMode", FAILURE) ;
+        SetIllegalMode(IllegalModeType'val( iIllegalMode )) ;
 
         read(buf, iWeightMode, ReadValid) ;
-        exit ReadLoop1 when failed(not ReadValid, "ReadCovDb: Failed while reading WeightMode") ;
+        exit when AlertIfNot(AlertLogIDVar, ReadValid, GetNamePlus(prefix => "in ", suffix => ", ") & 
+                       "CoveragePkg.ReadCovDb: Failed while reading WeightMode", FAILURE) ;
         WeightMode := WeightModeType'val( iWeightMode ) ;
 
         read(buf, iWeightScale, ReadValid) ;
-        exit ReadLoop1 when failed(not ReadValid, "ReadCovDb: Failed while reading WeightScale") ;
+        exit when AlertIfNot(AlertLogIDVar, ReadValid, GetNamePlus(prefix => "in ", suffix => ", ") & 
+                       "CoveragePkg.ReadCovDb: Failed while reading WeightScale", FAILURE) ;
         WeightScale := iWeightScale  ;
 
         read(buf, iCountMode, ReadValid) ;
-        exit ReadLoop1 when failed(not ReadValid, "ReadCovDb: Failed while reading CountMode") ;
+        exit when AlertIfNot(AlertLogIDVar, ReadValid, GetNamePlus(prefix => "in ", suffix => ", ") & 
+                       "CoveragePkg.ReadCovDb: Failed while reading CountMode", FAILURE) ;
         CountMode := CountModeType'val( iCountMode ) ;
 
         read(buf, iThresholdingEnable, ReadValid) ;
-        exit ReadLoop1 when failed(not ReadValid, "ReadCovDb: Failed while reading CountMode") ;
+        exit when AlertIfNot(AlertLogIDVar, ReadValid, GetNamePlus(prefix => "in ", suffix => ", ") & 
+                       "CoveragePkg.ReadCovDb: Failed while reading CountMode", FAILURE) ;
         ThresholdingEnable := iThresholdingEnable ;
 
         read(buf, iCovTarget, ReadValid) ;
-        exit ReadLoop1 when failed(not ReadValid, "ReadCovDb: Failed while reading CountMode") ;
+        exit when AlertIfNot(AlertLogIDVar, ReadValid, GetNamePlus(prefix => "in ", suffix => ", ") & 
+                       "CoveragePkg.ReadCovDb: Failed while reading CountMode", FAILURE) ;
         CovTarget := iCovTarget ;
 
         read(buf, iMergingEnable, ReadValid) ;
-        exit ReadLoop1 when failed(not ReadValid, "ReadCovDb: Failed while reading CountMode") ;
+        exit when AlertIfNot(AlertLogIDVar, ReadValid, GetNamePlus(prefix => "in ", suffix => ", ") & 
+                       "CoveragePkg.ReadCovDb: Failed while reading CountMode", FAILURE) ;
         MergingEnable := iMergingEnable ;
 
         exit ReadLoop1 ;
@@ -2737,16 +3369,22 @@ package body CoveragePkg is
 
       GoodLoop1 := ReadValid ;
 
-      ReadLoop2 : while not EndFile(CovDbFile) loop
+      -- ReadLoop2 : while not EndFile(CovDbFile) loop
+      ReadLoop2 : while ReadValid loop
+        -- ReadLine to Coverage Model Header WriteBin Message, skip blank and comment lines, fails when file empty
+        exit when AlertIf(AlertLogIDVar, EndFile(CovDbFile), GetNamePlus(prefix => "in ", suffix => ", ") & 
+                       "CoveragePkg.ReadCovDb: Coverage DB File Incomplete", FAILURE) ; 
         ReadLine(CovDbFile, buf) ;
-        EmptyOrCommentLine(buf, Empty) ;
+        EmptyOrCommentLine(buf, Empty, MultiLineComment) ;
         next when Empty ;
 
         read(buf, iNumberOfMessages, ReadValid) ;
-        exit ReadLoop2 when failed(not ReadValid, "ReadCovDb: Failed while reading NumberOfMessages") ;
+        exit when AlertIfNot(AlertLogIDVar, ReadValid, GetNamePlus(prefix => "in ", suffix => ", ") & 
+                       "CoveragePkg.ReadCovDb: Failed while reading NumberOfMessages", FAILURE) ;
 
         for i in 1 to iNumberOfMessages loop
-          exit ReadLoop2 when failed(EndFile(CovDbFile), "ReadCovDb: End of File while reading Messages") ;
+          exit when AlertIf(AlertLogIDVar, EndFile(CovDbFile), GetNamePlus(prefix => "in ", suffix => ", ") & 
+                       "CoveragePkg.ReadCovDb: End of File while reading Messages", FAILURE) ;
           ReadLine(CovDbFile, buf) ;
           SetMessage(buf.all) ;
         end loop ;
@@ -2767,22 +3405,26 @@ package body CoveragePkg is
       variable NumLines      : out integer ;
       variable Good          : out boolean
     ) is
-      variable buf           : line ;
-      variable ReadValid     : boolean ;
-      variable Empty         : boolean ;
+      variable buf               : line ;
+      variable ReadValid         : boolean ;
+      variable Empty             : boolean ;
+      variable MultiLineComment  : boolean := FALSE ;
     begin
 
-      ReadLoop : while not EndFile(CovDbFile) loop
+      ReadLoop : loop
+        -- ReadLine to RangeItems NumLines, skip blank and comment lines, fails when file empty
+        exit when AlertIf(AlertLogIDVar, EndFile(CovDbFile), GetNamePlus(prefix => "in ", suffix => ", ") & 
+                       "CoveragePkg.ReadCovDb: Coverage DB File Incomplete", FAILURE) ; 
         ReadLine(CovDbFile, buf) ;
-        EmptyOrCommentLine(buf, Empty) ;
+        EmptyOrCommentLine(buf, Empty, MultiLineComment) ;
         next when Empty ;
 
         read(buf, NumRangeItems, ReadValid) ;
-        exit ReadLoop when failed(not ReadValid, "ReadCovDb: Failed while reading NumRangeItems") ;
+        exit when AlertIfNot(AlertLogIDVar, ReadValid, GetNamePlus(prefix => "in ", suffix => ", ") & 
+                       "CoveragePkg.ReadCovDb: Failed while reading NumRangeItems", FAILURE) ;
         read(buf, NumLines, ReadValid) ;
-        assert ReadValid
-            report "ReadCovDb: Failed while reading NumLines"
-            severity failure ;
+        exit when AlertIfNot(AlertLogIDVar, ReadValid, GetNamePlus(prefix => "in ", suffix => ", ") & 
+                       "CoveragePkg.ReadCovDb: Failed while reading NumLines", FAILURE) ; 
         exit ;
       end loop ReadLoop ;
       Good := ReadValid ;
@@ -2797,47 +3439,72 @@ package body CoveragePkg is
       constant NumRangeItems : in  integer ;
       constant NumLines      : in  integer ;
       constant Merge         : in  boolean ;
-      variable Good          : out boolean 
+      variable Good          : out boolean
     )  is
-      variable buf         : line ;
-      variable Empty       : boolean ;
-      variable ReadValid   : boolean ;
+      variable buf              : line ;
+      variable Empty            : boolean ;
+      variable MultiLineComment : boolean := FALSE ;
+      variable ReadValid        : boolean ;
       -- Format:  Action Count min1 max1 min2 max2 ....
-      variable Action      : integer ;
-      variable Count       : integer ;
-      variable BinVal      : RangeArrayType(1 to NumRangeItems) ;
-      variable index       : integer ;
-      variable AtLeast     : integer ;
-      variable Weight      : integer ;
-      variable PercentCov  : real ;
+      variable Action           : integer ;
+      variable Count            : integer ;
+      variable BinVal           : RangeArrayType(1 to NumRangeItems) ;
+      variable index            : integer ;
+      variable AtLeast          : integer ;
+      variable Weight           : integer ;
+      variable PercentCov       : real ;
+      variable NameLength       : integer ;
+      variable SkipBlank        : character ;
+      variable NamePtr          : line ;
     begin
       GrowBins(NumLines) ;
       ReadLoop : for i in 1 to NumLines loop
-        exit ReadLoop when failed(EndFile(CovDbFile), "ReadCovDb:  Did not read specified number of lines") ;
-        ReadLine(CovDbFile, buf) ;
-        EmptyOrCommentLine(buf, Empty) ;
-        next when Empty ;  -- replace with EmptyLine(buf)
+      
+        GetValidLineLoop: loop 
+          exit ReadLoop when AlertIf(AlertLogIDVar, EndFile(CovDbFile), GetNamePlus(prefix => "in ", suffix => ", ") & 
+                       "CoveragePkg.ReadCovDb: Did not read specified number of lines", FAILURE) ;
+          ReadLine(CovDbFile, buf) ;
+          EmptyOrCommentLine(buf, Empty, MultiLineComment) ;
+          next GetValidLineLoop when Empty ;  -- replace with EmptyLine(buf)
+          exit GetValidLineLoop ; 
+        end loop ; 
 
         read(buf, Action, ReadValid) ;
-        exit ReadLoop when failed(not ReadValid, "ReadCovDb: Failed while reading Action") ;
+        exit ReadLoop when AlertIfNot(AlertLogIDVar, ReadValid, GetNamePlus(prefix => "in ", suffix => ", ") & 
+                       "CoveragePkg.ReadCovDb: Failed while reading Action", FAILURE) ;
         read(buf, Count, ReadValid) ;
-        exit ReadLoop when failed(not ReadValid, "ReadCovDb: Failed while reading Count") ;
+        exit ReadLoop when AlertIfNot(AlertLogIDVar, ReadValid, GetNamePlus(prefix => "in ", suffix => ", ") & 
+                       "CoveragePkg.ReadCovDb: Failed while reading Count", FAILURE) ;
         read(buf, AtLeast, ReadValid) ;
-        exit ReadLoop when failed(not ReadValid, "ReadCovDb: Failed while reading AtLeast") ;
+        exit ReadLoop when AlertIfNot(AlertLogIDVar, ReadValid, GetNamePlus(prefix => "in ", suffix => ", ") & 
+                       "CoveragePkg.ReadCovDb: Failed while reading AtLeast", FAILURE) ;
         read(buf, Weight, ReadValid) ;
-        exit ReadLoop when failed(not ReadValid, "ReadCovDb: Failed while reading Weight") ;
+        exit ReadLoop when AlertIfNot(AlertLogIDVar, ReadValid, GetNamePlus(prefix => "in ", suffix => ", ") & 
+                       "CoveragePkg.ReadCovDb: Failed while reading Weight", FAILURE) ;
         read(buf, PercentCov, ReadValid) ;
-        exit ReadLoop when failed(not ReadValid, "ReadCovDb: Failed while reading PercentCov") ;
+        exit ReadLoop when AlertIfNot(AlertLogIDVar, ReadValid, GetNamePlus(prefix => "in ", suffix => ", ") & 
+                       "CoveragePkg.ReadCovDb: Failed while reading PercentCov", FAILURE) ;
         read(buf, BinVal, ReadValid) ;
-        exit ReadLoop when failed(not ReadValid, "ReadCovDb: Failed while reading BinVal") ;
-
-        index := FindBin(Merge, BinVal, Action) ;
-        if index > 0 then -- merge it
+        exit ReadLoop when AlertIfNot(AlertLogIDVar, ReadValid, GetNamePlus(prefix => "in ", suffix => ", ") & 
+                       "CoveragePkg.ReadCovDb: Failed while reading BinVal", FAILURE) ;
+        read(buf, NameLength, ReadValid) ;
+        exit ReadLoop when AlertIfNot(AlertLogIDVar, ReadValid, GetNamePlus(prefix => "in ", suffix => ", ") & 
+                       "CoveragePkg.ReadCovDb: Failed while reading Bin Name Length", FAILURE) ;
+        read(buf, SkipBlank, ReadValid) ;
+        exit ReadLoop when AlertIfNot(AlertLogIDVar, ReadValid, GetNamePlus(prefix => "in ", suffix => ", ") & 
+                       "CoveragePkg.ReadCovDb: Failed while reading Bin Name Length", FAILURE) ;
+        read(buf, NamePtr, NameLength, ReadValid) ;
+        exit ReadLoop when AlertIfNot(AlertLogIDVar, ReadValid, GetNamePlus(prefix => "in ", suffix => ", ") & 
+                       "CoveragePkg.ReadCovDb: Failed while reading Bin Name", FAILURE) ;
+        index := FindExactBin(Merge, BinVal, Action, AtLeast, Weight, NamePtr.all) ;
+        if index > 0 then
+          -- Bin is an exact match so only merge the count values
           CovBinPtr(index).Count := CovBinPtr(index).Count + Count ;
           CovBinPtr(index).PercentCov := real(CovBinPtr(index).Count)*100.0/maximum(real(CovBinPtr(index).AtLeast), 1.0) ;
         else
-          InsertNewBin(BinVal, Action, Count, AtLeast, Weight, PercentCov) ;
-        end if ; 
+          InsertNewBin(BinVal, Action, Count, AtLeast, Weight, NamePtr.all, PercentCov) ;
+        end if ;
+        deallocate(NamePtr) ;
       end loop ReadLoop ;
       Good := ReadValid ;
     end ReadCovDbDataBase ;
@@ -2853,10 +3520,10 @@ package body CoveragePkg is
       variable NumLines      : integer ;
       variable ReadValid    : boolean ;
     begin
-      if not Merge then   
+      if not Merge then
         Deallocate ;  -- remove any old bins
       end if ;
-    
+
       ReadLoop : loop
         -- Read coverage private variables to the file
         ReadCovVars(CovDbFile, ReadValid) ;
@@ -2885,41 +3552,37 @@ package body CoveragePkg is
 
     ------------------------------------------------------------
     --  pt local
-    procedure WriteCovVars (file CovDbFile : text ) is
+    procedure WriteCovDbVars (file CovDbFile : text ) is
     ------------------------------------------------------------
       variable buf       : line ;
     begin
       -- write coverage private variables to the file
-      if Message.GetName /= "" then 
-        write(buf, Message.GetName) ;
-      else
-        swrite(buf, "CoveragePkg_Not_Named") ;
-      end if ; 
-      writeline(CovDbFile, buf) ; 
-      
+      swrite(buf, CovNameVar.Get("Coverage_Model_Not_Named")) ;
+      writeline(CovDbFile, buf) ;
+
       write(buf, RV.GetSeed ) ;
       write(buf, ' ') ;
-      write(buf, CovThreshold) ;
+      write(buf, CovThreshold, RIGHT, 0, 5) ;
       write(buf, ' ') ;
       write(buf, IllegalModeType'pos(IllegalMode)) ;
       write(buf, ' ') ;
       write(buf, WeightModeType'pos(WeightMode)) ;
       write(buf, ' ') ;
-      write(buf, WeightScale) ;
+      write(buf, WeightScale, RIGHT, 0, 6) ;
       write(buf, ' ') ;
       write(buf, CountModeType'pos(CountMode)) ;
       write(buf, ' ') ;
       write(buf, ThresholdingEnable) ; -- boolean
       write(buf, ' ') ;
-      write(buf, CovTarget) ; -- Real
+      write(buf, CovTarget, RIGHT, 0, 6) ; -- Real
       write(buf, ' ') ;
       write(buf, MergingEnable) ; -- boolean
       write(buf, ' ') ;
       writeline(CovDbFile, buf) ;
-      write(buf, Message.GetMessageCount ) ;
+      write(buf, CovMessageVar.GetCount ) ;
       writeline(CovDbFile, buf) ;
-      WriteBinName(CovDbFile, "", "") ;
-    end procedure WriteCovVars ;
+      WriteMessage(CovDbFile, CovMessageVar) ;
+    end procedure WriteCovDbVars ;
 
 
     ------------------------------------------------------------
@@ -2930,7 +3593,7 @@ package body CoveragePkg is
       variable buf       : line ;
     begin
       -- write Cover variables to the file
-      WriteCovVars( CovDbFile ) ;
+      WriteCovDbVars( CovDbFile ) ;
 
       -- write NumRangeItems, NumLines
       write(buf, CovBinPtr(1).BinVal'length) ;
@@ -2948,9 +3611,13 @@ package body CoveragePkg is
         write(buf, ' ') ;
         write(buf, CovBinPtr(LineCount).Weight) ;
         write(buf, ' ') ;
-        write(buf, CovBinPtr(LineCount).PercentCov) ;
+        write(buf, CovBinPtr(LineCount).PercentCov, RIGHT, 0, 4) ;
         write(buf, ' ') ;
         WriteBinVal(buf, CovBinPtr(LineCount).BinVal.all) ;
+        write(buf, ' ') ;
+        write(buf, CovBinPtr(LineCount).Name'length) ;
+        write(buf, ' ') ;
+        write(buf, CovBinPtr(LineCount).Name.all) ;
         writeline(CovDbFile, buf) ;
       end loop WriteLoop ;
     end procedure WriteCovDb ;
@@ -2962,7 +3629,12 @@ package body CoveragePkg is
       -- Format:  Action Count min1 max1 min2 max2
       file CovDbFile : text open OpenKind is FileName ;
     begin
-      WriteCovDb(CovDbFile) ;
+      if NumBins >= 1 then 
+        WriteCovDb(CovDbFile) ;
+      else
+        Alert(AlertLogIDVar, GetNamePlus(prefix => "in ", suffix => ", ") & 
+                       "CoveragePkg.WriteCovDb: no bins defined ", FAILURE) ; 
+      end if ; 
     end procedure WriteCovDb ;
 
 
@@ -2996,118 +3668,127 @@ package body CoveragePkg is
     end function GetErrorCount ;
 
     ------------------------------------------------------------
-    -- These support the older AddBins(GenCross(...)) methodology
+    -- These support usage of cross coverage constants
+    -- Also support the older AddBins(GenCross(...)) methodology
     -- which has been replaced by AddCross
     ------------------------------------------------------------
-    procedure AddBins (CovBin : CovMatrix2Type) is
+    procedure AddCross (CovBin : CovMatrix2Type ; Name : String := "") is
     ------------------------------------------------------------
     begin
+      CheckBinValLength(2, "AddCross") ;   
       GrowBins(CovBin'length) ;
       for i in CovBin'range loop
         InsertBin(
           CovBin(i).BinVal, CovBin(i).Action, CovBin(i).Count,
-          CovBin(i).AtLeast, CovBin(i).Weight
+          CovBin(i).AtLeast, CovBin(i).Weight, Name
         ) ;
       end loop ;
-    end procedure AddBins ;
+    end procedure AddCross ;
 
 
     ------------------------------------------------------------
-    procedure AddBins (CovBin : CovMatrix3Type) is
+    procedure AddCross (CovBin : CovMatrix3Type ; Name : String := "") is
     ------------------------------------------------------------
     begin
+      CheckBinValLength(3, "AddCross") ;   
       GrowBins(CovBin'length) ;
       for i in CovBin'range loop
         InsertBin(
           CovBin(i).BinVal, CovBin(i).Action, CovBin(i).Count,
-          CovBin(i).AtLeast, CovBin(i).Weight
+          CovBin(i).AtLeast, CovBin(i).Weight, Name
         ) ;
       end loop ;
-    end procedure AddBins ;
+    end procedure AddCross ;
 
 
     ------------------------------------------------------------
-    procedure AddBins (CovBin : CovMatrix4Type) is
+    procedure AddCross (CovBin : CovMatrix4Type ; Name : String := "") is
     ------------------------------------------------------------
     begin
+      CheckBinValLength(4, "AddCross") ;   
       GrowBins(CovBin'length) ;
       for i in CovBin'range loop
         InsertBin(
           CovBin(i).BinVal, CovBin(i).Action, CovBin(i).Count,
-          CovBin(i).AtLeast, CovBin(i).Weight
+          CovBin(i).AtLeast, CovBin(i).Weight, Name
         ) ;
       end loop ;
-    end procedure AddBins ;
+    end procedure AddCross ;
 
 
     ------------------------------------------------------------
-    procedure AddBins (CovBin : CovMatrix5Type) is
+    procedure AddCross (CovBin : CovMatrix5Type ; Name : String := "") is
     ------------------------------------------------------------
     begin
+      CheckBinValLength(5, "AddCross") ;   
       GrowBins(CovBin'length) ;
       for i in CovBin'range loop
         InsertBin(
           CovBin(i).BinVal, CovBin(i).Action, CovBin(i).Count,
-          CovBin(i).AtLeast, CovBin(i).Weight
+          CovBin(i).AtLeast, CovBin(i).Weight, Name
         ) ;
       end loop ;
-    end procedure AddBins ;
+    end procedure AddCross ;
 
 
     ------------------------------------------------------------
-    procedure AddBins (CovBin : CovMatrix6Type) is
+    procedure AddCross (CovBin : CovMatrix6Type ; Name : String := "") is
     ------------------------------------------------------------
     begin
+      CheckBinValLength(6, "AddCross") ;   
       GrowBins(CovBin'length) ;
       for i in CovBin'range loop
         InsertBin(
           CovBin(i).BinVal, CovBin(i).Action, CovBin(i).Count,
-          CovBin(i).AtLeast, CovBin(i).Weight
+          CovBin(i).AtLeast, CovBin(i).Weight, Name
         ) ;
       end loop ;
-    end procedure AddBins ;
+    end procedure AddCross ;
 
 
     ------------------------------------------------------------
-    procedure AddBins (CovBin : CovMatrix7Type) is
+    procedure AddCross (CovBin : CovMatrix7Type ; Name : String := "") is
     ------------------------------------------------------------
     begin
+      CheckBinValLength(7, "AddCross") ;   
       GrowBins(CovBin'length) ;
       for i in CovBin'range loop
         InsertBin(
           CovBin(i).BinVal, CovBin(i).Action, CovBin(i).Count,
-          CovBin(i).AtLeast, CovBin(i).Weight
+          CovBin(i).AtLeast, CovBin(i).Weight, Name
         ) ;
       end loop ;
-    end procedure AddBins ;
+    end procedure AddCross ;
 
 
     ------------------------------------------------------------
-    procedure AddBins (CovBin : CovMatrix8Type) is
+    procedure AddCross (CovBin : CovMatrix8Type ; Name : String := "") is
     ------------------------------------------------------------
     begin
+      CheckBinValLength(8, "AddCross") ;   
       GrowBins(CovBin'length) ;
       for i in CovBin'range loop
         InsertBin(
           CovBin(i).BinVal, CovBin(i).Action, CovBin(i).Count,
-          CovBin(i).AtLeast, CovBin(i).Weight
+          CovBin(i).AtLeast, CovBin(i).Weight, Name
         ) ;
       end loop ;
-    end procedure AddBins ;
+    end procedure AddCross ;
 
 
     ------------------------------------------------------------
-    procedure AddBins (CovBin : CovMatrix9Type) is
+    procedure AddCross (CovBin : CovMatrix9Type ; Name : String := "") is
     ------------------------------------------------------------
     begin
+      CheckBinValLength(9, "AddCross") ;   
       GrowBins(CovBin'length) ;
       for i in CovBin'range loop
         InsertBin(
           CovBin(i).BinVal, CovBin(i).Action, CovBin(i).Count,
-          CovBin(i).AtLeast, CovBin(i).Weight
+          CovBin(i).AtLeast, CovBin(i).Weight, Name
         ) ;
       end loop ;
-    end procedure AddBins ;
+    end procedure AddCross ;
 
 -- ------------------------------------------------------------
 -- ------------------------------------------------------------
@@ -3250,8 +3931,8 @@ package body CoveragePkg is
                    CovBinPtr(BinIndex).Count ) ;
 
         when others =>
-          report "Selected Weight Mode not Supported with depricated RandCovPoint(AtLeast), see RandCovPoint(PercentCov)"
-              severity failure ;
+          Alert(AlertLogIDVar, GetNamePlus(prefix => "in ", suffix => ", ") & "CoveragePkg.CalcWeight:" &   
+                      " Selected Weight Mode not supported with deprecated RandCovPoint(AtLeast), see RandCovPoint(PercentCov)", FAILURE) ; 
           return MaxAtLeast - CovBinPtr(BinIndex).Count ;
 
       end case ;
@@ -3267,7 +3948,7 @@ package body CoveragePkg is
       variable WeightVec : integer_vector(0 to NumBins-1) ;  -- Prep for change to DistInt
       variable MinCount, AdjAtLeast, MaxAtLeast : integer ;
     begin
-      ItemCount := ItemCount + 1 ; 
+      ItemCount := ItemCount + 1 ;
       MinCount := GetMinCov ;
       -- iAtLeast := integer(ceil(CovTarget * real(AtLeast)/100.0)) ;
       if ThresholdingEnable then
@@ -3300,7 +3981,7 @@ package body CoveragePkg is
       end loop CovLoop ;
       -- DistInt returns integer range 0 to Numbins-1
       LastIndex := 1 + RV.DistInt( WeightVec )  ; -- return range 1 to NumBins
-      return LastIndex ; 
+      return LastIndex ;
     end function RandHoleIndex ;
 
     ------------------------------------------------------------
@@ -3342,7 +4023,7 @@ package body CoveragePkg is
     impure function GetHoleBinVal ( ReqHoleNum : integer ; AtLeast : integer ) return RangeArrayType is
     ------------------------------------------------------------
       variable HoleCount : integer := 0 ;
-      variable buf : line ; 
+      variable buf : line ;
     begin
       CovLoop : for i in 1 to NumBins loop
 --        if CovBinPtr(i).action = COV_COUNT and CovBinPtr(i).Count < minimum(AtLeast, CovBinPtr(i).AtLeast) then
@@ -3353,10 +4034,10 @@ package body CoveragePkg is
           end if ;
         end if ;
       end loop CovLoop ;
-      write(buf, "%%Error GetHoleBinVal did not find hole.  " &
-                     "HoleCount = " & integer'image(HoleCount) &
-                     "ReqHoleNum = " & integer'image(ReqHoleNum) & LF) ;
-      writeline(OUTPUT, buf) ; 
+      Alert(AlertLogIDVar, GetNamePlus(prefix => "in ", suffix => ", ") & "CoveragePkg.GetHoleBinVal:" & 
+                    " did not find hole.  HoleCount = " & integer'image(HoleCount) &
+                    "ReqHoleNum = " & integer'image(ReqHoleNum), ERROR
+      ) ;
       return CovBinPtr(NumBins).BinVal.all ;
     end function GetHoleBinVal ;
 
@@ -3375,13 +4056,18 @@ package body CoveragePkg is
     procedure WriteCovHoles ( file f : text;  AtLeast : integer ) is
     ------------------------------------------------------------
       -- variable minAtLeast : integer ;
-      variable buf : line ; 
+      variable buf : line ;
     begin
       WriteBinName(f, "WriteCovHoles: ") ;
       if NumBins < 1 then
-        swrite(buf, "%%FATAL, Coverage Model is empty.  Nothing to print.") ;
-        writeline(f, buf) ;
-        report "Coverage model is empty.  Nothing to print." severity failure ;
+        if WriteBinFileInit or UsingLocalFile then
+          -- Duplicate Alert in specified file
+          swrite(buf, "%% Alert FAILURE " & GetNamePlus(prefix => "in ", suffix => ", ") & "CoveragePkg.WriteCovHoles:" &  
+                      " coverage model is empty.  Nothing to print.") ;
+          writeline(f, buf) ;
+        end if ; 
+        Alert(AlertLogIDVar, GetNamePlus(prefix => "in ", suffix => ", ") & "CoveragePkg.WriteCovHoles:" & 
+                      " coverage model is empty.  Nothing to print.", FAILURE) ;
       end if ;
       CovLoop : for i in 1 to NumBins loop
 --        minAtLeast := minimum(AtLeast,CovBinPtr(i).AtLeast) ;
@@ -3398,7 +4084,7 @@ package body CoveragePkg is
           writeline(f, buf) ;
         end if ;
       end loop CovLoop ;
-      swrite(buf, "") ; 
+      swrite(buf, "") ;
       writeline(f, buf) ;
     end procedure WriteCovHoles ;
 
@@ -3409,9 +4095,29 @@ package body CoveragePkg is
     ------------------------------------------------------------
     begin
       if WriteBinFileInit then
+        -- Write to Local WriteBinFile - Deprecated, recommend use TranscriptFile instead
         WriteCovHoles(WriteBinFile, AtLeast) ;
+      elsif IsTranscriptEnabled then 
+        -- Write to TranscriptFile
+        WriteCovHoles(TranscriptFile, AtLeast) ;
+        if IsTranscriptMirrored then
+          -- Mirrored to OUTPUT
+          WriteCovHoles(OUTPUT, AtLeast) ;
+        end if ; 
       else
+        -- Default Write to OUTPUT
         WriteCovHoles(OUTPUT, AtLeast) ;
+      end if;
+    end procedure WriteCovHoles ;
+
+
+    ------------------------------------------------------------
+    -- Deprecated.  New versions use PercentCov.
+    procedure WriteCovHoles ( LogLevel : LogType ; AtLeast : integer ) is
+    ------------------------------------------------------------
+    begin
+      if IsLogEnabled(AlertLogIDVar, LogLevel) then
+        WriteCovHoles(AtLeast) ; 
       end if;
     end procedure WriteCovHoles ;
 
@@ -3425,8 +4131,72 @@ package body CoveragePkg is
       WriteCovHoles(CovHoleFile, AtLeast) ;
     end procedure WriteCovHoles ;
 
+    ------------------------------------------------------------
+    -- Deprecated.  New versions use PercentCov.
+    procedure WriteCovHoles ( LogLevel : LogType ; FileName : string;  AtLeast : integer ; OpenKind : File_Open_Kind := APPEND_MODE ) is
+    ------------------------------------------------------------
+    begin
+      if IsLogEnabled(AlertLogIDVar, LogLevel) then
+        WriteCovHoles(FileName, AtLeast, OpenKind) ;
+      end if;
+    end procedure WriteCovHoles ;
+    
+    ------------------------------------------------------------
+    -- Deprecated.  Use AddCross Instead.
+    procedure AddBins (CovBin : CovMatrix2Type ; Name : String := "") is
+    ------------------------------------------------------------
+    begin
+      AddCross(CovBin, Name) ;
+    end procedure AddBins ;
 
+    ------------------------------------------------------------
+    procedure AddBins (CovBin : CovMatrix3Type ; Name : String := "") is
+    ------------------------------------------------------------
+    begin
+      AddCross(CovBin, Name) ;
+    end procedure AddBins ;
 
+    ------------------------------------------------------------
+    procedure AddBins (CovBin : CovMatrix4Type ; Name : String := "") is
+    ------------------------------------------------------------
+    begin
+      AddCross(CovBin, Name) ;
+    end procedure AddBins ;
+
+    ------------------------------------------------------------
+    procedure AddBins (CovBin : CovMatrix5Type ; Name : String := "") is
+    ------------------------------------------------------------
+    begin
+      AddCross(CovBin, Name) ;
+    end procedure AddBins ;
+
+    ------------------------------------------------------------
+    procedure AddBins (CovBin : CovMatrix6Type ; Name : String := "") is
+    ------------------------------------------------------------
+    begin
+      AddCross(CovBin, Name) ;
+    end procedure AddBins ;
+
+    ------------------------------------------------------------
+    procedure AddBins (CovBin : CovMatrix7Type ; Name : String := "") is
+    ------------------------------------------------------------
+    begin
+      AddCross(CovBin, Name) ;
+    end procedure AddBins ;
+
+    ------------------------------------------------------------
+    procedure AddBins (CovBin : CovMatrix8Type ; Name : String := "") is
+    ------------------------------------------------------------
+    begin
+      AddCross(CovBin, Name) ;
+    end procedure AddBins ;
+
+    ------------------------------------------------------------
+    procedure AddBins (CovBin : CovMatrix9Type ; Name : String := "") is
+    ------------------------------------------------------------
+    begin
+      AddCross(CovBin, Name) ;
+    end procedure AddBins ;
 
   end protected body CovPType ;
 
@@ -3446,15 +4216,18 @@ package body CoveragePkg is
     variable NumBins1, NumBins2 : integer ;
     variable BinInfo1, BinInfo2 : CovBinBaseType ;
     variable BinVal1, BinVal2 : RangeArrayType(1 to Bin1.GetBinValLength) ;
-    variable buf : line ; 
+    variable buf : line ;
+    variable iAlertLogID : AlertLogIDType ;
   begin
+    iAlertLogID := Bin1.GetAlertLogID ;
+    
     NumBins1 := Bin1.GetNumBins ;
     NumBins2 := Bin2.GetNumBins ;
 
     if (NumBins1 /= NumBins2) then
-      write(buf, "Bins have different lengths" & LF) ;
-      writeline(OUTPUT, buf) ; 
       ErrorCount := ErrorCount + 1 ;
+      print("CoveragePkg.CompareBins: CoverageModels " & Bin1.GetCovModelName & " and " & Bin2.GetCovModelName & 
+            " have different bin lengths") ; 
       return ;
     end if ;
 
@@ -3464,31 +4237,51 @@ package body CoveragePkg is
       BinVal1  := Bin1.GetBinVal(i) ;
       BinVal2  := Bin2.GetBinVal(i) ;
       if BinInfo1 /= BinInfo2 or BinVal1 /= BinVal2 then
-        ErrorCount := ErrorCount + 1 ;
         write(buf, "%% Bin:" & integer'image(i) & " miscompare." & LF) ;
-        writeline(OUTPUT, buf) ; 
+        -- writeline(OUTPUT, buf) ;
         swrite(buf, "%% Bin1: ") ;
         write(buf, BinVal1) ;
         write(buf, "   Action = " & integer'image(BinInfo1.action)) ;
         write(buf, "   Count = " & integer'image(BinInfo1.count)) ;
         write(buf, "   AtLeast = " & integer'image(BinInfo1.AtLeast)) ;
-        write(buf, "   Weight = " & integer'image(BinInfo1.Weight)) ;
-        writeline(OUTPUT, buf) ;
+        write(buf, "   Weight = " & integer'image(BinInfo1.Weight) & LF ) ;
+        -- writeline(OUTPUT, buf) ;
         swrite(buf, "%% Bin2: ") ;
         write(buf, BinVal2) ;
         write(buf, "   Action = " & integer'image(BinInfo2.action)) ;
         write(buf, "   Count = " & integer'image(BinInfo2.count)) ;
         write(buf, "   AtLeast = " & integer'image(BinInfo2.AtLeast)) ;
-        write(buf, "   Weight = " & integer'image(BinInfo2.Weight)) ;
-        writeline(OUTPUT, buf) ;
+        write(buf, "   Weight = " & integer'image(BinInfo2.Weight) & LF ) ;
+        -- writeline(OUTPUT, buf) ;
+        ErrorCount := ErrorCount + 1 ;
+        writeline(buf) ; 
+        -- Alert(iAlertLogID, buf.all, ERROR) ; 
+        -- deallocate(buf) ;
       end if ;
     end loop ;
   end procedure CompareBins ;
-
+  
+  
+  ------------------------------------------------------------
+  -- Experimental.  Intended primarily for development.
+  procedure CompareBins (
+  ------------------------------------------------------------
+    variable Bin1       : inout CovPType ;
+    variable Bin2       : inout CovPType 
+  ) is
+    variable ErrorCount : integer ;
+    variable iAlertLogID : AlertLogIDType ;
+  begin
+    CompareBins(Bin1, Bin2, ErrorCount) ; 
+    iAlertLogID := Bin1.GetAlertLogID ;
+    AlertIf(ErrorCount /= 0, "CoveragePkg.CompareBins: CoverageModels " & Bin1.GetCovModelName & " and " & Bin2.GetCovModelName & " are not the same.") ; 
+  end procedure CompareBins ; 
 
   ------------------------------------------------------------
   -- package local, Used by GenBin, IllegalBin, and IgnoreBin
   function MakeBin(
+  -- Must be pure to allow initializing coverage models passed as generics.
+  -- Impure implies the expression is not globally static.  
   ------------------------------------------------------------
     Min, Max      : integer ;
     NumBin        : integer ;
@@ -3498,83 +4291,99 @@ package body CoveragePkg is
   ) return CovBinType is
     variable iCovBin : CovBinType(1 to NumBin) ;
     variable TotalBins : integer ; -- either real or integer
-    variable rMax, rCurMin, rNextMin, rNumItemsInBin, rRemainingBins : real ; -- must be real
+    variable rMax, rCurMin, rNumItemsInBin, rRemainingBins : real ; -- must be real
+    variable iCurMin, iCurMax : integer ; 
   begin
     if Min > Max then
-      report "MakeBin (GenBin, IllegalBin, IgnoreBin): Min must be <= Max"
-        severity failure ;
+      -- Similar to NULL ranges.  Only generate report warning.
+      report "OSVVM.CoveragePkg.MakeBin (called by GenBin, IllegalBin, or IgnoreBin) MAX > MIN generated NULL_BIN"
+        severity WARNING ; 
+      -- No Alerts. They make this impure.
+      -- Alert(OSVVM_ALERTLOG_ID, "CoveragePkg.MakeBin (called by GenBin, IllegalBin, IgnoreBin): Min must be <= Max", WARNING) ;
       return NULL_BIN ;
 
     elsif NumBin <= 0 then
-      report "MakeBin (GenBin, IllegalBin, IgnoreBin): NumBin must be <= 0"
-        severity failure ;
+      -- Similar to NULL ranges.  Only generate report warning.  
+      report "OSVVM.CoveragePkg.MakeBin (called by GenBin, IllegalBin, or IgnoreBin) NumBin <= 0 generated NULL_BIN"
+        severity WARNING ; 
+      -- Alerts make this impure.  
+      -- Alert(OSVVM_ALERTLOG_ID, "CoveragePkg.MakeBin (called by GenBin, IllegalBin, IgnoreBin): NumBin must be <= 0", WARNING) ;
       return NULL_BIN ;
 
     elsif NumBin = 1 then
       iCovBin(1) := (
-        BinVal => (1 => (Min, Max)),
-        Action => Action,
-        Count => 0,
-        Weight => Weight,
-        AtLeast => AtLeast
+        BinVal   => (1 => (Min, Max)),
+        Action   => Action,
+        Count    => 0,
+        Weight   => Weight,
+        AtLeast  => AtLeast
       ) ;
       return iCovBin ;
 
     else
-      rCurMin := real(Min) ;
+      -- Using type real to work around issues with integer sizing
+      iCurMin := Min ; 
+      rCurMin := real(iCurMin) ;
       rMax    := real(Max) ;
       rRemainingBins :=  (minimum( real(NumBin), rMax - rCurMin + 1.0 )) ;
       TotalBins := integer(rRemainingBins)  ;
       for i in iCovBin'range loop
-        exit when rRemainingBins = 0.0 ;
-        rNumItemsInBin := trunc((rMax - rCurMin + 1.0) / rRemainingBins) ; -- can be too large
-        rNextMin := rCurMin + rNumItemsInBin ;  -- can be 2**31
+        rNumItemsInBin := trunc((rMax - rCurMin + 1.0) / rRemainingBins) ; -- Max - Min can be larger than integer range.
+        iCurMax := iCurMin - integer(-rNumItemsInBin + 1.0) ;  -- Keep: the "minus negative" works around a simulator bounds issue found in 2015.06
         iCovBin(i) := (
-          BinVal => (1 => (integer(rCurMin), integer(rNextMin - 1.0))),
-          Action => Action,
-          Count => 0,
-          Weight => Weight,
-          AtLeast => AtLeast
+          BinVal   => (1 => (iCurMin, iCurMax)),
+          Action   => Action,
+          Count    => 0,
+          Weight   => Weight,
+          AtLeast  => AtLeast
         ) ;
-        rCurMin := rNextMin ;
         rRemainingBins := rRemainingBins - 1.0 ;
+        exit when rRemainingBins = 0.0 ;
+        iCurMin := iCurMax + 1 ; 
+        rCurMin := real(iCurMin) ;
       end loop ;
       return iCovBin(1 to TotalBins) ;
+      
     end if ;
   end function MakeBin ;
 
--- Old version with bug
---    ------------------------------------------------------------
---    -- package local, Used by GenBin, IllegalBin, and IgnoreBin
---    function MakeBin(
---    ------------------------------------------------------------
---      Min, Max      : integer ;
---      NumBin        : integer ;
---      AtLeast       : integer ;
---      Weight        : integer ;
---      Action        : integer
---    ) return CovBinType is
---      constant CheckParms : boolean := failed(Min > Max, "MakeBin (GenBin, IllegalBin, IgnoreBin): Min must be <= Max") ;
---      constant CALC_NUM_BINS : integer := minimum(NumBin, Max-Min+1) ;
---      variable iCovBin : CovBinType(0 to CALC_NUM_BINS -1) ;
---      variable CurMin, NextMin, RemainingBins, NumItemsInBin : integer ;
---    begin
---      CurMin := Min ;
---      for i in iCovBin'range loop
---        RemainingBins := CALC_NUM_BINS - i ;
---        NumItemsInBin := (Max - CurMin + 1) / RemainingBins ;
---        NextMin := CurMin + NumItemsInBin ;
---        iCovBin(i) := (
---          BinVal => (1 => (CurMin, NextMin - 1)),
---          Action => Action,
---          Count => 0,
---          Weight => Weight,
---          AtLeast => AtLeast
---        ) ;
---        CurMin := NextMin ;
---      end loop ;
---      return iCovBin ;
---    end function MakeBin ;
+
+  ------------------------------------------------------------
+  -- package local, Used by GenBin, IllegalBin, and IgnoreBin
+  function MakeBin(
+  ------------------------------------------------------------
+    A             : integer_vector ;
+    AtLeast       : integer ;
+    Weight        : integer ;
+    Action        : integer
+  ) return CovBinType is
+    alias    NewA      : integer_vector(1 to A'length) is A ;
+    variable iCovBin   : CovBinType(1 to A'length) ;
+  begin
+
+    if A'length <= 0 then
+      -- Similar to NULL ranges.  Only generate report warning.  
+      report "OSVVM.CoveragePkg.MakeBin (called by GenBin, IllegalBin, or IgnoreBin) integer_vector length <= 0 generated NULL_BIN"
+        severity WARNING ; 
+      -- Alerts make this impure.  
+      -- Alert(OSVVM_ALERTLOG_ID, "CoveragePkg.MakeBin (GenBin, IllegalBin, IgnoreBin): integer_vector parameter must have values", WARNING) ; 
+      return NULL_BIN ;
+
+    else
+      for i in NewA'Range loop
+        iCovBin(i) := (
+          BinVal   => (i => (NewA(i), NewA(i)) ),
+          Action   => Action,
+          Count    => 0,
+          Weight   => Weight,
+          AtLeast  => AtLeast
+        ) ;
+      end loop ;
+      return iCovBin ;
+    end if ;
+  end function MakeBin ;
+
+
   ------------------------------------------------------------
   function GenBin(
   ------------------------------------------------------------
@@ -3596,7 +4405,7 @@ package body CoveragePkg is
 
 
   ------------------------------------------------------------
-  function GenBin(AtLeast : integer ;  Min, Max, NumBin : integer ) return CovBinType is
+  function GenBin( AtLeast : integer ;  Min, Max, NumBin : integer ) return CovBinType is
   ------------------------------------------------------------
   begin
     return  MakeBin(
@@ -3629,7 +4438,7 @@ package body CoveragePkg is
   function GenBin ( Min, Max : integer) return CovBinType is
   ------------------------------------------------------------
   begin
-    -- default, create a separate CovBin for each value
+    -- create a separate CovBin for each value
     -- AtLeast and Weight = 1 (must use longer version to specify)
     return  MakeBin(
               Min      => Min,
@@ -3643,15 +4452,58 @@ package body CoveragePkg is
 
 
   ------------------------------------------------------------
-  function GenBin ( A : integer) return CovBinType is
+  function GenBin ( A : integer ) return CovBinType is
   ------------------------------------------------------------
   begin
-    -- default, create a separate CovBin for each value
+    -- create a single CovBin for A.
     -- AtLeast and Weight = 1 (must use longer version to specify)
     return  MakeBin(
               Min      => A,
               Max      => A,
               NumBin   => 1,
+              AtLeast  => 1,
+              Weight   => 1,
+              Action   => COV_COUNT
+            ) ;
+  end function GenBin ;
+
+
+  ------------------------------------------------------------
+  function GenBin(
+  ------------------------------------------------------------
+    AtLeast       : integer ;
+    Weight        : integer ;
+    A             : integer_vector
+  ) return CovBinType is
+  begin
+    return  MakeBin(
+              A        => A,
+              AtLeast  => AtLeast,
+              Weight   => Weight,
+              Action   => COV_COUNT
+            ) ;
+  end function GenBin ;
+
+
+  ------------------------------------------------------------
+  function GenBin ( AtLeast : integer ;  A : integer_vector ) return CovBinType is
+  ------------------------------------------------------------
+  begin
+    return  MakeBin(
+              A        => A,
+              AtLeast  => AtLeast,
+              Weight   => 1,
+              Action   => COV_COUNT
+            ) ;
+  end function GenBin ;
+
+
+  ------------------------------------------------------------
+  function GenBin ( A : integer_vector ) return CovBinType is
+  ------------------------------------------------------------
+  begin
+    return  MakeBin(
+              A        => A,
               AtLeast  => 1,
               Weight   => 1,
               Action   => COV_COUNT
@@ -3704,41 +4556,7 @@ package body CoveragePkg is
   end function IllegalBin ;
 
 
-  ----------------------------------------------------------
-  -- function IgnoreBin (
-  ----------------------------------------------------------
-    -- AtLeast       : integer ;
-    -- Weight        : integer ;
-    -- Min, Max      : integer ;
-    -- NumBin        : integer
-  -- ) return CovBinType is
-  -- begin
-    -- return  MakeBin(
-              -- Min      => Min,
-              -- Max      => Max,
-              -- NumBin   => NumBin,
-              -- AtLeast  => AtLeast,
-              -- Weight   => Weight,
-              -- Action   => COV_IGNORE
-            -- ) ;
-  -- end function IgnoreBin ;
-
-
-  ----------------------------------------------------------
-  -- function IgnoreBin (AtLeast : integer ;  Min, Max, NumBin : integer) return CovBinType is
-  ----------------------------------------------------------
-  -- begin
-    -- return  MakeBin(
-              -- Min      => Min,
-              -- Max      => Max,
-              -- NumBin   => NumBin,
-              -- AtLeast  => AtLeast,
-              -- Weight   => 0,
-              -- Action   => COV_IGNORE
-            -- ) ;
-  -- end function IgnoreBin ;
-
-
+-- IgnoreBin should never have an AtLeast parameter
   ------------------------------------------------------------
   function IgnoreBin (Min, Max, NumBin : integer) return CovBinType is
   ------------------------------------------------------------
@@ -3783,22 +4601,6 @@ package body CoveragePkg is
               Action   => COV_IGNORE
             ) ;
   end function IgnoreBin ;
-
-
-  ------------------------------------------------------------
-  function GenBin (
-  -- Manual entry format for CovBin within lots of extra parens
-  ------------------------------------------------------------
-    ManualBin    : CovBinManualType
-  ) return CovBinType is
-    alias    imBin    : CovBinManualType (1 to ManualBin'length) is ManualBin ;
-    variable iCovBin : CovBinType(imBin'range) ;
-  begin
-    for i in iCovBin'range loop
-      iCovBin(i) := ( (1 => (imBin(i)(0),imBin(i)(1))), imBin(i)(2), 0, 1, 1) ;
-    end loop ;
-    return iCovBin ;
-  end function GenBin ;
 
 
   ------------------------------------------------------------
@@ -4160,34 +4962,6 @@ package body CoveragePkg is
 
 
   ------------------------------------------------------------
-  procedure increment( signal Count : inout integer ) is
-  ------------------------------------------------------------
-  begin
-    Count <= Count + 1 ;
-  end procedure increment ;
-
-
-  ------------------------------------------------------------
-  procedure increment( signal Count : inout integer ; enable : boolean ) is
-  ------------------------------------------------------------
-  begin
-    if enable then
-      Count <= Count + 1 ;
-    end if ;
-  end procedure increment ;
-
-
-  ------------------------------------------------------------
-  procedure increment( signal Count : inout integer ; enable : std_ulogic ) is
-  ------------------------------------------------------------
-  begin
-    if to_x01(enable) = '1' then
-      Count <= Count + 1 ;
-    end if ;
-  end procedure increment ;
-
-
-  ------------------------------------------------------------
   function to_integer ( B : boolean ) return integer is
   ------------------------------------------------------------
   begin
@@ -4233,5 +5007,38 @@ package body CoveragePkg is
     end loop ;
     return result ;
   end function to_integer_vector ;
+  
+  
+  ------------------------------------------------------------
+  ------------------------------------------------------------
+-- Deprecated:  These are not part of the coverage model
+  
+  ------------------------------------------------------------
+  procedure increment( signal Count : inout integer ) is
+  ------------------------------------------------------------
+  begin
+    Count <= Count + 1 ;
+  end procedure increment ;
+
+
+  ------------------------------------------------------------
+  procedure increment( signal Count : inout integer ; enable : boolean ) is
+  ------------------------------------------------------------
+  begin
+    if enable then
+      Count <= Count + 1 ;
+    end if ;
+  end procedure increment ;
+
+
+  ------------------------------------------------------------
+  procedure increment( signal Count : inout integer ; enable : std_ulogic ) is
+  ------------------------------------------------------------
+  begin
+    if to_x01(enable) = '1' then
+      Count <= Count + 1 ;
+    end if ;
+  end procedure increment ;
+  
 
 end package body CoveragePkg ;

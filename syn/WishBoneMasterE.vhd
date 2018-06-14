@@ -4,10 +4,6 @@ library ieee;
 
 
 entity WishBoneMasterE is
-  generic (
-    G_ADR_WIDTH  : positive := 8;  --* address bus width
-    G_DATA_WIDTH : positive := 8   --* data bus width
-  );
   port (
     --+ wishbone system if
     WbRst_i       : in  std_logic;
@@ -16,18 +12,18 @@ entity WishBoneMasterE is
     WbCyc_o       : out std_logic;
     WbStb_o       : out std_logic;
     WbWe_o        : out std_logic;
-    WbAdr_o       : out std_logic_vector(G_ADR_WIDTH-1 downto 0);
-    WbDat_o       : out std_logic_vector(G_DATA_WIDTH-1 downto 0);
+    WbAdr_o       : out std_logic_vector;
+    WbDat_o       : out std_logic_vector;
     --+ wishbone inputs
-    WbDat_i       : in  std_logic_vector(G_DATA_WIDTH-1 downto 0);
+    WbDat_i       : in  std_logic_vector;
     WbAck_i       : in  std_logic;
     WbErr_i       : in  std_logic;
     --+ local register if
     LocalWen_i    : in  std_logic;
     LocalRen_i    : in  std_logic;
-    LocalAdress_i : in  std_logic_vector(G_ADR_WIDTH-1 downto 0);
-    LocalData_i   : in  std_logic_vector(G_DATA_WIDTH-1 downto 0);
-    LocalData_o   : out std_logic_vector(G_DATA_WIDTH-1 downto 0);
+    LocalAdress_i : in  std_logic_vector;
+    LocalData_i   : in  std_logic_vector;
+    LocalData_o   : out std_logic_vector;
     LocalAck_o    : out std_logic;
     LocalError_o  : out std_logic
   );
@@ -83,7 +79,7 @@ begin
 
 
   --+ combinatoral local register if outputs
-  LocalData_o  <= WbDat_i when s_wb_master_fsm  = DATA else (others => '0');
+  LocalData_o  <= WbDat_i when s_wb_master_fsm  = DATA else (LocalData_o'range => '0');
   LocalError_o <= WbErr_i when s_wb_master_fsm /= IDLE else '0';
   LocalAck_o   <= WbAck_i when (s_wb_master_fsm = ADDRESS or s_wb_master_fsm = DATA) and WbErr_i = '0' else '0';
 
@@ -98,8 +94,8 @@ begin
   begin
     if(rising_edge(WbClk_i)) then
       if(WbRst_i = '1') then
-        WbAdr_o  <= (others => '0');
-        WbDat_o  <= (others => '0');
+        WbAdr_o  <= (WbAdr_o'range => '0');
+        WbDat_o  <= (WbDat_o'range => '0');
         s_wb_wen <= '0';
       else
         if (s_wb_master_fsm = IDLE) then

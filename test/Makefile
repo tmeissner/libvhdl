@@ -69,8 +69,9 @@ spi: spit
 
 
 wishbonet: OsvvmContext.o AssertP.o SimP.o QueueP.o DictP.o UtilsP.o \
-	  $(SYN_SRC)/WishBoneMasterE.vhd $(SYN_SRC)/WishBoneSlaveE.vhd WishBoneT.vhd
-	ghdl -a --std=$(VHD_STD) -fpsl $(SYN_SRC)/WishBoneMasterE.vhd $(SYN_SRC)/WishBoneSlaveE.vhd
+	  $(SYN_SRC)/WishBoneP.vhd $(SYN_SRC)/WishBoneMasterE.vhd $(SYN_SRC)/WishBoneSlaveE.vhd WishBoneT.vhd
+	ghdl -a --std=$(VHD_STD) -fpsl $(SYN_SRC)/WishBoneP.vhd
+	ghdl -a --std=$(VHD_STD) -fpsl $(SYN_SRC)/WishBoneCheckerE.vhd $(SYN_SRC)/WishBoneMasterE.vhd $(SYN_SRC)/WishBoneSlaveE.vhd
 	ghdl -a --std=$(VHD_STD) -fpsl WishBoneT.vhd
 	ghdl -e --std=$(VHD_STD) $@
 

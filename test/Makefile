@@ -1,7 +1,7 @@
 SIM_SRC := ../sim
 SYN_SRC := ../syn
 CMN_SRC := ../common
-OSVVM_SRC := ../OSVVM
+OSVVM_SRC := ../lib/OSVVM
 VHD08_SRC := vhdl_2008
 VHD_STD := 08
 

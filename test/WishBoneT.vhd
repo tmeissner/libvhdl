@@ -236,7 +236,6 @@ begin
 
 
   WbSlaveLocalP : process is
-    variable v_data : std_logic_vector(s_slave_local_din'range);
   begin
     wait until rising_edge(s_wb_clk);
     if (s_wb_reset = '1') then
@@ -248,8 +247,7 @@ begin
         WB_SLAVE_REG : assert sv_wb_slave_dict.hasKey(slv_to_uint(s_slave_local_adress))
           report "ERROR: Requested register at addr 0x" & to_hstring(s_slave_local_adress) & " not written before"
           severity failure;
-        sv_wb_slave_dict.get(slv_to_uint(s_slave_local_adress), v_data);
-        s_slave_local_din <= v_data;
+        s_slave_local_din <= sv_wb_slave_dict.get(slv_to_uint(s_slave_local_adress));
       end if;
     end if;
   end process WbSlaveLocalP;
@@ -269,7 +267,8 @@ i_WishBoneChecker : WishBoneCheckerE
     --+ wishbone inputs
     WbSDat_i      => s_wishbone.RDat,
     WbSAck_i      => s_wishbone.Ack,
-    WbSErr_i      => s_wishbone.Err
+    WbSErr_i      => s_wishbone.Err,
+    WbRty_i       => '0'
   );
 
 

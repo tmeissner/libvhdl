@@ -129,7 +129,7 @@ begin
   --   report "WB master: Write error";
   --
   -- psl WB_READ : assert always
-  --   ((not(WbCyc_o) and not(WbStb_o) and LocalRen_i and not(LocalWen_i)) |->
+  --   ((not(WbCyc_o) and not(WbStb_o) and LocalRen_i and not(LocalWen_i)) ->
   --    next (WbCyc_o = '1' and WbStb_o = '1' and WbWe_o = '0')) abort WbRst_i
   --   report "WB master: Read error";
 

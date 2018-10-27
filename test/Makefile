@@ -68,7 +68,7 @@ spi: spit
 	ghdl -r --std=$(VHD_STD) $@t --wave=$@t.ghw
 
 
-wishbonet: OsvvmContext.o AssertP.o SimP.o QueueP.o DictP.o UtilsP.o \
+wishbonet: OsvvmContext.o AssertP.o SimP.o QueueP.o DictP.o UtilsP.o $(SYN_SRC)/WishBoneCheckerE.vhd \
 	  $(SYN_SRC)/WishBoneP.vhd $(SYN_SRC)/WishBoneMasterE.vhd $(SYN_SRC)/WishBoneSlaveE.vhd WishBoneT.vhd
 	ghdl -a --std=$(VHD_STD) -fpsl $(SYN_SRC)/WishBoneP.vhd
 	ghdl -a --std=$(VHD_STD) -fpsl $(SYN_SRC)/WishBoneCheckerE.vhd $(SYN_SRC)/WishBoneMasterE.vhd $(SYN_SRC)/WishBoneSlaveE.vhd

@@ -73,7 +73,8 @@ package WishBoneP is
       --+ wishbone inputs
       WbSDat_i      : in std_logic_vector;
       WbSAck_i      : in std_logic;
-      WbSErr_i      : in std_logic
+      WbSErr_i      : in std_logic;
+      WbRty_i       : in std_logic
     );
   end component WishBoneCheckerE;
 

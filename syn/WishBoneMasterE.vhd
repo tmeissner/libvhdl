@@ -4,6 +4,11 @@ library ieee;
 
 
 entity WishBoneMasterE is
+  generic (
+    Coverage     : boolean := false;
+    AddressWidth : natural := 8;
+    DataWidth    : natural := 8
+  );
   port (
     --+ wishbone system if
     WbRst_i       : in  std_logic;
@@ -12,18 +17,18 @@ entity WishBoneMasterE is
     WbCyc_o       : out std_logic;
     WbStb_o       : out std_logic;
     WbWe_o        : out std_logic;
-    WbAdr_o       : out std_logic_vector;
-    WbDat_o       : out std_logic_vector;
+    WbAdr_o       : out std_logic_vector(AddressWidth-1 downto 0);
+    WbDat_o       : out std_logic_vector(DataWidth-1 downto 0);
     --+ wishbone inputs
-    WbDat_i       : in  std_logic_vector;
+    WbDat_i       : in  std_logic_vector(DataWidth-1 downto 0);
     WbAck_i       : in  std_logic;
     WbErr_i       : in  std_logic;
     --+ local register if
     LocalWen_i    : in  std_logic;
     LocalRen_i    : in  std_logic;
-    LocalAdress_i : in  std_logic_vector;
-    LocalData_i   : in  std_logic_vector;
-    LocalData_o   : out std_logic_vector;
+    LocalAdress_i : in  std_logic_vector(AddressWidth-1 downto 0);
+    LocalData_i   : in  std_logic_vector(DataWidth-1 downto 0);
+    LocalData_o   : out std_logic_vector(DataWidth-1 downto 0);
     LocalAck_o    : out std_logic;
     LocalError_o  : out std_logic
   );
@@ -79,7 +84,7 @@ begin
 
 
   --+ combinatoral local register if outputs
-  LocalData_o  <= WbDat_i when s_wb_master_fsm  = DATA else (LocalData_o'range => '0');
+  LocalData_o  <= WbDat_i when s_wb_master_fsm  = DATA else (others => '0');
   LocalError_o <= WbErr_i when s_wb_master_fsm /= IDLE else '0';
   LocalAck_o   <= WbAck_i when (s_wb_master_fsm = ADDRESS or s_wb_master_fsm = DATA) and WbErr_i = '0' else '0';
 
@@ -94,8 +99,8 @@ begin
   begin
     if(rising_edge(WbClk_i)) then
       if(WbRst_i = '1') then
-        WbAdr_o  <= (WbAdr_o'range => '0');
-        WbDat_o  <= (WbDat_o'range => '0');
+        WbAdr_o  <= (others => '0');
+        WbDat_o  <= (others => '0');
         s_wb_wen <= '0';
       else
         if (s_wb_master_fsm = IDLE) then
@@ -134,19 +139,21 @@ begin
   --   report "WB master: Read error";
 
 
-  -- PSL cover directives
+  CoverageG : if Coverage generate
 
-  -- psl COVER_LOCAL_WRITE : cover {s_wb_master_fsm = IDLE and LocalWen_i = '1' and
-  --   LocalRen_i = '0' and WbRst_i = '0'}
-  --  report "WB master: Local write";
-  --
-  -- psl COVER_LOCAL_READ : cover {s_wb_master_fsm = IDLE and LocalRen_i = '1' and
-  --   LocalWen_i = '0' and WbRst_i = '0'}
-  --  report "WB master: Local read";
-  --
-  -- psl COVER_LOCAL_WRITE_READ : cover {s_wb_master_fsm = IDLE and LocalWen_i = '1' and
-  --   LocalRen_i = '1' and WbRst_i = '0'}
-  --  report "WB master: Local write & read";
+    -- psl COVER_LOCAL_WRITE : cover {s_wb_master_fsm = IDLE and LocalWen_i = '1' and
+    --   LocalRen_i = '0' and WbRst_i = '0'}
+    --  report "WB master: Local write";
+    --
+    -- psl COVER_LOCAL_READ : cover {s_wb_master_fsm = IDLE and LocalRen_i = '1' and
+    --   LocalWen_i = '0' and WbRst_i = '0'}
+    --  report "WB master: Local read";
+    --
+    -- psl COVER_LOCAL_WRITE_READ : cover {s_wb_master_fsm = IDLE and LocalWen_i = '1' and
+    --   LocalRen_i = '1' and WbRst_i = '0'}
+    --  report "WB master: Local write & read";
+
+  end generate CoverageG;
 
 
 end architecture rtl;

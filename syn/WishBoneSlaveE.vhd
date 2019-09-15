@@ -5,6 +5,10 @@ library ieee;
 
 
 entity WishBoneSlaveE is
+  generic (
+    AddressWidth : natural := 8;
+    DataWidth    : natural := 8
+  );
   port (
     --+ wishbone system if
     WbRst_i       : in  std_logic;
@@ -13,18 +17,18 @@ entity WishBoneSlaveE is
     WbCyc_i       : in  std_logic;
     WbStb_i       : in  std_logic;
     WbWe_i        : in  std_logic;
-    WbAdr_i       : in  std_logic_vector;
-    WbDat_i       : in  std_logic_vector;
+    WbAdr_i       : in  std_logic_vector(AddressWidth-1 downto 0);
+    WbDat_i       : in  std_logic_vector(DataWidth-1 downto 0);
     --+ wishbone outputs
-    WbDat_o       : out std_logic_vector;
+    WbDat_o       : out std_logic_vector(DataWidth-1 downto 0);
     WbAck_o       : out std_logic;
     WbErr_o       : out std_logic;
     --+ local register if
     LocalWen_o    : out std_logic;
     LocalRen_o    : out std_logic;
-    LocalAdress_o : out std_logic_vector;
-    LocalData_o   : out std_logic_vector;
-    LocalData_i   : in  std_logic_vector
+    LocalAdress_o : out std_logic_vector(AddressWidth-1 downto 0);
+    LocalData_o   : out std_logic_vector(DataWidth-1 downto 0);
+    LocalData_i   : in  std_logic_vector(DataWidth-1 downto 0)
   );
 end entity WishBoneSlaveE;
 
@@ -75,11 +79,11 @@ begin
   --+ local register if outputs
   LocalWen_o     <= WbWe_i      when s_wb_slave_fsm  = ADDRESS and s_wb_active else '0';
   LocalRen_o     <= not(WbWe_i) when s_wb_slave_fsm  = ADDRESS and s_wb_active else '0';
-  LocalAdress_o  <= WbAdr_i     when s_wb_slave_fsm /= IDLE    and s_wb_active else (LocalAdress_o'range => '0');
-  LocalData_o    <= WbDat_i     when s_wb_slave_fsm  = ADDRESS and s_wb_active and WbWe_i = '1' else (LocalData_o'range => '0');
+  LocalAdress_o  <= WbAdr_i     when s_wb_slave_fsm /= IDLE    and s_wb_active else (others => '0');
+  LocalData_o    <= WbDat_i     when s_wb_slave_fsm  = ADDRESS and s_wb_active and WbWe_i = '1' else (others => '0');
 
   --+ wishbone if outputs
-  WbDat_o <= LocalData_i when s_wb_slave_fsm = DATA and WbWe_i = '0' else (WbDat_o'range => '0');
+  WbDat_o <= LocalData_i when s_wb_slave_fsm = DATA and WbWe_i = '0' else (others => '0');
   WbAck_o <= '1'         when s_wb_slave_fsm = DATA or (s_wb_slave_fsm = ADDRESS and s_wb_active and WbWe_i = '1') else '0';
   WbErr_o <= '0';
 

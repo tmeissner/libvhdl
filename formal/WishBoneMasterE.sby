@@ -1,0 +1,20 @@
+[tasks]
+prove
+cover
+
+[options]
+depth 20
+prove: mode prove
+cover: mode cover
+
+[engines]
+prove: abc pdr
+cover: smtbmc z3
+
+[script]
+prove: ghdl --std=08 -gCoverage=false -gFormal=true -gAddressWidth=32 -gDataWidth=32 WishBoneMasterE.vhd -e wishbonemastere
+cover: ghdl --std=08 -gCoverage=true -gFormal=true -gAddressWidth=32 -gDataWidth=32 WishBoneMasterE.vhd -e wishbonemastere
+prep -auto-top
+
+[files]
+../syn/WishBoneMasterE.vhd

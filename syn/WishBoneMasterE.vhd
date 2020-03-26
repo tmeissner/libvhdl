@@ -6,8 +6,9 @@ library ieee;
 
 entity WishBoneMasterE is
   generic (
-    Coverage     : boolean := true;
-    Formal       : boolean := true;
+    Coverage     : boolean := false;
+    Formal       : boolean := false;
+    Simulation   : boolean := false;
     AddressWidth : natural := 8;
     DataWidth    : natural := 8
   );
@@ -119,6 +120,8 @@ begin
   end process OutRegsP;
 
 
+  default clock is rising_edge(WbClk_i);
+
   FormalG : if Formal generate
 
     -- Glue logic
@@ -140,9 +143,6 @@ begin
         end if;
       end if;
     end process;
-
-
-    default clock is rising_edge(WbClk_i);
 
     restrict {WbRst_i = '1'; WbRst_i = '0'[+]}[*1];
 
@@ -185,8 +185,6 @@ begin
 
   CoverageG : if Coverage generate
 
-    default clock is rising_edge(WbClk_i);
-
     restrict {WbRst_i = '1'; WbRst_i = '0'[+]}[*1];
 
     COVER_LOCAL_WRITE : cover {s_wb_master_fsm = IDLE and LocalWen_i = '1' and
@@ -201,9 +199,44 @@ begin
        LocalRen_i = '1' and WbRst_i = '0'}
       report "WB master: Local write & read";
 
-    test_cover : cover {s_wb_master_fsm = IDLE and LocalWen_i = '1'; s_wb_master_fsm = ADDRESS; s_wb_master_fsm = DATA};
-
   end generate CoverageG;
+
+
+  SimulationG : if Simulation generate
+
+    -- assert directives
+    RESET : assert always
+      WbRst_i ->
+      WbCyc_o = '0' and WbStb_o = '0' and WbWe_o = '0' and
+      to_integer(unsigned(WbAdr_o)) = 0 and to_integer(unsigned(WbDat_o)) = 0 and
+      LocalAck_o = '0' and LocalError_o = '0' and to_integer(unsigned(LocalData_o)) = 0
+      report "WB master: Reset error";
+
+    WB_WRITE : assert always
+      ((not(WbCyc_o) and not(WbStb_o) and LocalWen_i and not (LocalRen_i)) ->
+      next (WbCyc_o = '1' and WbStb_o = '1' and WbWe_o = '1')) abort WbRst_i
+      report "WB master: Write error";
+
+    WB_READ : assert always
+      ((not(WbCyc_o) and not(WbStb_o) and LocalRen_i and not(LocalWen_i)) ->
+      next (WbCyc_o = '1' and WbStb_o = '1' and WbWe_o = '0')) abort WbRst_i
+      report "WB master: Read error";
+
+
+    -- cover directives
+    COVER_LOCAL_WRITE : cover {s_wb_master_fsm = IDLE and LocalWen_i = '1' and
+      LocalRen_i = '0' and WbRst_i = '0'}
+      report "WB master: Local write";
+
+    COVER_LOCAL_READ : cover {s_wb_master_fsm = IDLE and LocalRen_i = '1' and
+      LocalWen_i = '0' and WbRst_i = '0'}
+      report "WB master: Local read";
+
+    COVER_LOCAL_WRITE_READ : cover {s_wb_master_fsm = IDLE and LocalWen_i = '1' and
+      LocalRen_i = '1' and WbRst_i = '0'}
+      report "WB master: Local write & read";
+
+  end generate SimulationG;
 
 
 end architecture rtl;

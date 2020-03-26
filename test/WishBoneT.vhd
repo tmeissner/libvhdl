@@ -160,6 +160,13 @@ begin
 
 
   i_WishBoneMasterE : WishBoneMasterE
+    generic map (
+      Coverage     => false,
+      Formal       => false,
+      Simulation   => true,
+      AddressWidth => C_ADDRESS_WIDTH,
+      DataWidth    => C_DATA_WIDTH
+    )
     port map (
       --+ wishbone system if
       WbRst_i       => s_wb_reset,
@@ -212,6 +219,12 @@ begin
 
 
   i_WishBoneSlaveE : WishBoneSlaveE
+    generic map (
+      Formal       => false,
+      Simulation   => true,
+      AddressWidth => C_ADDRESS_WIDTH,
+      DataWidth    => C_DATA_WIDTH
+    )
     port map (
       --+ wishbone system if
       WbRst_i       => s_wb_reset,

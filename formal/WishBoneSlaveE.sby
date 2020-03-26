@@ -1,18 +1,23 @@
 [tasks]
+bmc
 prove
 cover
 
 [options]
 depth 25
+bmc: mode bmc
 prove: mode prove
 cover: mode cover
 
 [engines]
+bmc: smtbmc z3
 prove: abc pdr
 cover: smtbmc z3
 
 [script]
-ghdl --std=08 -gFormal=true -gAddressWidth=32 -gDataWidth=32 WishBoneSlaveE.vhd -e wishboneslavee
+bmc: ghdl --std=08 -gFormal=true -gSimulation=false -gAddressWidth=32 -gDataWidth=32 WishBoneSlaveE.vhd -e wishboneslavee
+prove: ghdl --std=08 -gFormal=true -gSimulation=false -gAddressWidth=32 -gDataWidth=32 WishBoneSlaveE.vhd -e wishboneslavee
+cover: ghdl --std=08 -gFormal=true -gSimulation=false -gAddressWidth=32 -gDataWidth=32 WishBoneSlaveE.vhd -e wishboneslavee
 prep -auto-top
 
 [files]

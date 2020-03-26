@@ -7,6 +7,7 @@ library ieee;
 entity WishBoneSlaveE is
   generic (
     Formal       : boolean := false;
+    Simulation   : boolean := false;
     AddressWidth : natural := 32;
     DataWidth    : natural := 32
   );
@@ -89,6 +90,8 @@ begin
   WbErr_o <= '1' when s_wb_slave_fsm = DATA and WbWe_i = '1' else '0';
 
 
+  default clock is rising_edge(WbClk_i);
+
   FormalG : if Formal generate
 
     -- Glue logic
@@ -107,9 +110,6 @@ begin
         s_wb_address <= WbAdr_i;
       end if;
     end process SyncWbSignals;
-
-
-    default clock is rising_edge(WbClk_i);
 
     restrict {WbRst_i = '1'; WbRst_i = '0'[+]}[*1];
 
@@ -188,6 +188,49 @@ begin
       report "PSL ERROR: Reset error";
 
   end generate FormalG;
+
+
+  SimulationG : if Simulation generate
+
+    LOCAL_WRITE : assert always
+      ((WbCyc_i and WbStb_i and WbWe_i) ->
+       (LocalWen_o = '1' and WbAck_o = '1' and LocalAdress_o = WbAdr_i and LocalData_o = WbDat_i)) abort WbRst_i
+      report "PSL ERROR: Local write error";
+
+    LOCAL_READ : assert always
+      ({not(WbCyc_i) and not(WbStb_i); WbCyc_i and WbStb_i and not(WbWe_i)} |->
+       {LocalRen_o = '1' and LocalAdress_o = WbAdr_i and WbAck_o = '0'; LocalRen_o = '0' and WbDat_o = LocalData_i and WbAck_o = '1'}) abort WbRst_i
+      report "PSL ERROR: Local read error";
+
+    WB_ACK : assert always
+      WbAck_o ->
+      (WbCyc_i and WbStb_i)
+      report "PSL ERROR: WbAck invalid";
+
+    WB_ERR : assert always
+      WbErr_o ->
+      (WbCyc_i and WbStb_i)
+      report "PSL ERROR: WbErr invalid";
+
+    LOCAL_WE : assert always
+      LocalWen_o ->
+      (WbCyc_i and WbStb_i and WbWe_i and not(LocalRen_o)) and
+      (next not(LocalWen_o))
+      report "PSL ERROR: LocalWen invalid";
+
+    LOCAL_RE : assert always
+      LocalRen_o ->
+      (WbCyc_i and WbStb_i and not(WbWe_i) and not(LocalWen_o)) and
+      (next not(LocalRen_o))
+      report "PSL ERROR: LocalRen invalid";
+
+    RESET : assert always
+      WbRst_i ->
+      (to_integer(unsigned(WbDat_o)) = 0 and WbAck_o = '0' and WbErr_o = '0' and
+       LocalWen_o = '0' and LocalRen_o = '0' and to_integer(unsigned(LocalAdress_o)) = 0 and to_integer(unsigned(LocalData_o)) = 0)
+      report "PSL ERROR: Reset error";
+
+  end generate SimulationG;
 
 
 end architecture rtl;

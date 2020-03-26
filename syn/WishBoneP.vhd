@@ -8,6 +8,13 @@ package WishBoneP is
 
 
   component WishBoneMasterE is
+    generic (
+      Coverage     : boolean := false;
+      Formal       : boolean := false;
+      Simulation   : boolean := false;
+      AddressWidth : natural := 8;
+      DataWidth    : natural := 8
+    );
     port (
       --+ wishbone system if
       WbRst_i       : in  std_logic;
@@ -35,6 +42,12 @@ package WishBoneP is
 
 
   component WishBoneSlaveE is
+    generic (
+      Formal       : boolean := false;
+      Simulation   : boolean := false;
+      AddressWidth : natural := 32;
+      DataWidth    : natural := 32
+    );
     port (
       --+ wishbone system if
       WbRst_i       : in  std_logic;

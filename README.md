@@ -13,7 +13,7 @@ Instead it serves more as an example how to implement various things in VHDL and
 (Non-)synthesizable components for testbenches
 
 ##### AssertP (Deprecated, better use Alerts from OSVVM instead)
-Package with various assertion procedures. 
+Package with various assertion procedures.
 
 * `assert_true(x[, str, level])` checks if boolean x = false
 * `assert_false(x[, str, level])` checks if boolean x = false
@@ -59,7 +59,7 @@ Simple WishBone bus master with support of classic single write & read
 Simple WishBone bus slave with support of classic single write & read and register backend
 
 
-##test
+## test
 Unit tests for each component
 
 ##### QueueT
@@ -73,6 +73,10 @@ Unit tests for SpiMasterE and SpiSlaveE components
 
 ##### WishBoneT
 Unit tests for WishBoneMasterE and WishBoneSlaveE components
+
+
+## formal
+Formal verification for selected components
 
 
 ## common
@@ -96,7 +100,7 @@ Common functions useful for simulation/synthesis
 
 ## Dependencies
 To run the tests, you have to install GHDL. You can get it from
-[https://github.com/tgingold/ghdl/](https://github.com/tgingold/ghdl/). Your GHDL version should not be too old, because libvhdl needs VHDL-2008 support. So, it's best to get the latest stable release or build from latest sources. 
+[https://github.com/tgingold/ghdl/](https://github.com/tgingold/ghdl/). Your GHDL version should not be too old, because libvhdl needs VHDL-2008 support. So, it's best to get the latest stable release or build from latest sources.
 
 libvhdl uses the OSVVM library to generate random data for the unit tests. It is shipped with libvhdl as git submodule. You have to use the `--recursive` option when clone
 the libvhdl Repository to get it: `git clone --recursive https://git.goodcleanfun.de/tmeissner/libvhdl`

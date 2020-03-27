@@ -1,4 +1,5 @@
 [![test](https://github.com/tmeissner/libvhdl/workflows/test/badge.svg?branch=master)](https://github.com/tmeissner/libvhdl/actions?query=workflow%3Atest)
+[![formal](https://github.com/tmeissner/libvhdl/workflows/formal/badge.svg?branch=master)](https://github.com/tmeissner/libvhdl/actions?query=workflow%3Aformal)
 
 The original repository is now located on my own git-server at [https://git.goodcleanfun.de/tmeissner/libvhdl](https://git.goodcleanfun.de/tmeissner/libvhdl)
 It is mirrored to github with every push, so both should be in sync.

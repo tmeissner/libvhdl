@@ -27,7 +27,7 @@ use ieee.numeric_std.all;
 entity UartTx is
   generic (
     DATA_LENGTH : positive range 5 to 9 := 8;
-    PARITY      : boolean := false;  -- not implemented yet
+    PARITY      : boolean := true;
     CLK_DIV     : natural := 10
   );
   port (
@@ -45,12 +45,6 @@ end entity UartTx;
 architecture rtl of UartTx is
 
 
-  type t_uart_state is (IDLE, SEND);
-  signal s_uart_state : t_uart_state;
-
-  signal s_data : std_logic_vector(DATA_LENGTH+1 downto 0);
-  signal s_clk_en : boolean;
-
   function odd_parity (data : in std_logic_vector(DATA_LENGTH-1 downto 0)) return std_logic is
     variable v_data : std_logic := '0';
   begin
@@ -59,6 +53,22 @@ architecture rtl of UartTx is
     end loop;
     return not v_data;
   end function odd_parity;
+
+  function to_integer (data : in boolean) return integer is
+  begin
+    if data then
+      return 1;
+    else
+      return 0;
+    end if;
+  end function to_integer;
+
+
+  type t_uart_state is (IDLE, SEND);
+  signal s_uart_state : t_uart_state;
+
+  signal s_data   : std_logic_vector(DATA_LENGTH+1+to_integer(PARITY) downto 0);
+  signal s_clk_en : boolean;
 
 
 begin
@@ -102,7 +112,11 @@ begin
           v_bit_cnt := s_data'length-1;
           if (valid_i = '1' and accept_o = '1') then
             accept_o     <= '0';
-            s_data       <= '1' & data_i & '0';
+            if (PARITY) then
+              s_data <= '1' & odd_parity(data_i) & data_i & '0';
+            else
+              s_data <= '1' & data_i & '0';
+            end if;
             s_uart_state <= SEND;
           end if;
         when SEND =>

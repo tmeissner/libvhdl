@@ -70,6 +70,8 @@ architecture sim of UartT is
   end component UartRx;
 
   constant c_data_length : positive range 5 to 8 := 8;
+  constant c_parity : boolean := true;
+  constant c_clk_div : natural := 10;
 
   signal s_reset_n   : std_logic := '0';
   signal s_clk       : std_logic := '1';
@@ -82,7 +84,39 @@ architecture sim of UartT is
   signal s_rx_valid  : std_logic;
   signal s_rx_accept : std_logic;
 
-  signal s_uart      : std_logic;
+  signal s_tx_uart   : std_logic := '1';
+  signal s_rx_uart   : std_logic := '1';
+
+  signal s_error_inject : boolean := false;
+  signal s_error_injected : boolean := false;
+
+  procedure injectError (signal inject : out boolean) is
+    variable v_injected : boolean;
+    variable v_random   : RandomPType;
+  begin
+    v_random.InitSeed(v_random'instance_name & to_string(now));
+    loop
+      v_injected := false;
+      wait until s_tx_valid = '1' and s_tx_accept = '1';
+      wait until falling_edge(s_tx_uart);
+      -- Skip start bit
+      for i in 0 to c_clk_div-1 loop
+        wait until rising_edge(s_clk);
+      end loop;
+      -- Possibly distort one of the data bits
+      for i in 0 to c_data_length-1 loop
+        if (not v_injected and v_random.DistValInt(((0, 9), (1, 1))) = 1) then
+          v_injected := true;
+          inject     <= true;
+        end if;
+        for y in 0 to c_clk_div-1 loop
+          wait until rising_edge(s_clk);
+        end loop;
+        inject <= false;
+      end loop;
+    end loop;
+    wait;
+  end procedure injectError;
 
 
 begin
@@ -91,8 +125,8 @@ begin
   Dut_UartTx : UartTx
     generic map (
       DATA_LENGTH => c_data_length,
-      PARITY      => true,
-      CLK_DIV     => 10
+      PARITY      => c_parity,
+      CLK_DIV     => c_clk_div
     )
     port map (
       reset_n_i => s_reset_n,
@@ -100,15 +134,20 @@ begin
       data_i    => s_tx_data,
       valid_i   => s_tx_valid,
       accept_o  => s_tx_accept,
-      tx_o      => s_uart
+      tx_o      => s_tx_uart
     );
+
+
+  -- Error injection based on random
+  injectError(s_error_inject);
+  s_rx_uart <= s_tx_uart when not s_error_inject else not(s_tx_uart);
 
 
   Dut_UartRx : UartRx
     generic map (
       DATA_LENGTH => c_data_length,
-      PARITY      => true,
-      CLK_DIV     => 10
+      PARITY      => c_parity,
+      CLK_DIV     => c_clk_div
     )
     port map (
       reset_n_i => s_reset_n,
@@ -117,7 +156,7 @@ begin
       error_o   => s_rx_error,
       valid_o   => s_rx_valid,
       accept_i  => s_rx_accept,
-      rx_i      => s_uart
+      rx_i      => s_rx_uart
     );
 
 
@@ -125,8 +164,14 @@ begin
   s_reset_n <= '1' after 20 ns;
 
 
+  -- Store if an error was injected in the current frame
+  s_error_injected <= true  when rising_edge(s_clk) and s_error_inject else
+                      false when s_tx_valid = '1';
+
+
   TestP : process is
     variable v_data   : std_logic_vector(c_data_length-1 downto 0);
+    variable v_error : boolean := false;
     variable v_random : RandomPType;
   begin
     v_random.InitSeed(v_random'instance_name);
@@ -143,12 +188,21 @@ begin
       wait until rising_edge(s_clk) and s_tx_accept = '1';
       s_tx_valid <= '0';
       wait until rising_edge(s_clk) and s_rx_valid = '1';
-      assert s_rx_data = v_data
-        report "Received data 0x" & to_hstring(s_rx_data) & ", expected 0x" & to_hstring(v_data)
-        severity failure;
-      assert s_rx_error = '0'
-        report "Received error 0b" & to_string(s_rx_error) & ", expected 0b0"
-        severity failure;
+      if s_error_injected then
+        assert s_rx_data /= v_data
+          report "Received data 0x" & to_hstring(s_rx_data) & ", expected 0x" & to_hstring(v_data)
+          severity failure;
+        assert s_rx_error = '1'
+          report "Received error 0b" & to_string(s_rx_error) & ", expected 0b1"
+          severity failure;
+      else
+        assert s_rx_data = v_data
+          report "Received data 0x" & to_hstring(s_rx_data) & ", expected 0x" & to_hstring(v_data)
+          severity failure;
+        assert s_rx_error = '0'
+          report "Received error 0b" & to_string(s_rx_error) & ", expected 0b0"
+          severity failure;
+      end if;
     end loop;
     wait for 10 us;
     stop(0);

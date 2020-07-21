@@ -22,6 +22,9 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
+library libvhdl;
+use libvhdl.UtilsP.all;
+
 
 
 entity UartRx is
@@ -47,12 +50,8 @@ architecture rtl of UartRx is
 
 
   function odd_parity (data : in std_logic_vector(DATA_LENGTH-1 downto 0)) return std_logic is
-    variable v_data : std_logic := '0';
   begin
-    for i in data'range loop
-      v_data := v_data xor data(i);
-    end loop;
-    return not v_data;
+    return not xor_reduce(data);
   end function odd_parity;
 
   function to_integer (data : in boolean) return integer is

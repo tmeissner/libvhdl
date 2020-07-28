@@ -1,7 +1,26 @@
 SIM_SRC := ../sim
 SYN_SRC := ../syn
 CMN_SRC := ../common
-OSVVM_SRC := ../lib/OSVVM
+OSVVM_DIR := ../lib/OSVVM
+OSVVM_SRC := \
+  $(OSVVM_DIR)/NamePkg.vhd \
+  $(OSVVM_DIR)/OsvvmGlobalPkg.vhd \
+  $(OSVVM_DIR)/VendorCovApiPkg.vhd \
+  $(OSVVM_DIR)/TranscriptPkg.vhd \
+  $(OSVVM_DIR)/TextUtilPkg.vhd \
+  $(OSVVM_DIR)/AlertLogPkg.vhd \
+  $(OSVVM_DIR)/MessagePkg.vhd \
+  $(OSVVM_DIR)/SortListPkg_int.vhd \
+  $(OSVVM_DIR)/RandomBasePkg.vhd \
+  $(OSVVM_DIR)/RandomPkg.vhd \
+  $(OSVVM_DIR)/CoveragePkg.vhd \
+  $(OSVVM_DIR)/MemoryPkg.vhd \
+  $(OSVVM_DIR)/ScoreboardGenericPkg.vhd \
+  $(OSVVM_DIR)/ScoreboardPkg_slv.vhd \
+  $(OSVVM_DIR)/ScoreboardPkg_int.vhd \
+  $(OSVVM_DIR)/ResolutionPkg.vhd \
+  $(OSVVM_DIR)/TbUtilPkg.vhd \
+  $(OSVVM_DIR)/OsvvmContext.vhd
 VHD08_SRC := vhdl_2008
 VHD_STD := 08
 
@@ -10,25 +29,8 @@ VHD_STD := 08
 all: queue dict stack sim wishbone uart
 
 
-OsvvmContext.o: $(OSVVM_SRC)/*.vhd
-	ghdl -a --std=$(VHD_STD) --work=osvvm $(OSVVM_SRC)/NamePkg.vhd
-	ghdl -a --std=$(VHD_STD) --work=osvvm $(OSVVM_SRC)/OsvvmGlobalPkg.vhd
-	ghdl -a --std=$(VHD_STD) --work=osvvm $(OSVVM_SRC)/VendorCovApiPkg.vhd
-	ghdl -a --std=$(VHD_STD) --work=osvvm $(OSVVM_SRC)/TranscriptPkg.vhd
-	ghdl -a --std=$(VHD_STD) --work=osvvm $(OSVVM_SRC)/TextUtilPkg.vhd
-	ghdl -a --std=$(VHD_STD) --work=osvvm $(OSVVM_SRC)/AlertLogPkg.vhd
-	ghdl -a --std=$(VHD_STD) --work=osvvm $(OSVVM_SRC)/MessagePkg.vhd
-	ghdl -a --std=$(VHD_STD) --work=osvvm $(OSVVM_SRC)/SortListPkg_int.vhd
-	ghdl -a --std=$(VHD_STD) --work=osvvm $(OSVVM_SRC)/RandomBasePkg.vhd
-	ghdl -a --std=$(VHD_STD) --work=osvvm $(OSVVM_SRC)/RandomPkg.vhd
-	ghdl -a --std=$(VHD_STD) --work=osvvm $(OSVVM_SRC)/CoveragePkg.vhd
-	ghdl -a --std=$(VHD_STD) --work=osvvm $(OSVVM_SRC)/MemoryPkg.vhd
-	ghdl -a --std=$(VHD_STD) --work=osvvm $(OSVVM_SRC)/ScoreboardGenericPkg.vhd
-	ghdl -a --std=$(VHD_STD) --work=osvvm $(OSVVM_SRC)/ScoreboardPkg_slv.vhd
-	ghdl -a --std=$(VHD_STD) --work=osvvm $(OSVVM_SRC)/ScoreboardPkg_int.vhd
-	ghdl -a --std=$(VHD_STD) --work=osvvm $(OSVVM_SRC)/ResolutionPkg.vhd
-	ghdl -a --std=$(VHD_STD) --work=osvvm $(OSVVM_SRC)/TbUtilPkg.vhd
-	ghdl -a --std=$(VHD_STD) --work=osvvm $(OSVVM_SRC)/OsvvmContext.vhd
+OsvvmContext.o: $(OSVVM_SRC)
+	ghdl -a --std=$(VHD_STD) --work=osvvm -Wno-hide $(OSVVM_SRC)
 
 
 UtilsP.o: $(CMN_SRC)/UtilsP.vhd

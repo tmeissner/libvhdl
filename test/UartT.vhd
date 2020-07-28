@@ -108,6 +108,7 @@ architecture sim of UartT is
         if (not v_injected and v_random.DistValInt(((0, 9), (1, 1))) = 1) then
           v_injected := true;
           inject     <= true;
+          report "Injected transmit error on bit #" & to_string(i);
         end if;
         for y in 0 to c_clk_div-1 loop
           wait until rising_edge(s_clk);
@@ -171,7 +172,7 @@ begin
 
   TestP : process is
     variable v_data   : std_logic_vector(c_data_length-1 downto 0);
-    variable v_error : boolean := false;
+    variable v_error  : boolean := false;
     variable v_random : RandomPType;
   begin
     v_random.InitSeed(v_random'instance_name);
@@ -185,6 +186,7 @@ begin
       s_rx_accept <= '1';
       v_data      := v_random.RandSlv(8);
       s_tx_data   <= v_data;
+      report "Testcase #" & to_string(i) & ": Transmit 0x" & to_hstring(v_data);
       wait until rising_edge(s_clk) and s_tx_accept = '1';
       s_tx_valid <= '0';
       wait until rising_edge(s_clk) and s_rx_valid = '1';

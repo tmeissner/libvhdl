@@ -49,11 +49,6 @@ end entity UartRx;
 architecture rtl of UartRx is
 
 
-  function odd_parity (data : in std_logic_vector(DATA_LENGTH-1 downto 0)) return std_logic is
-  begin
-    return not xor_reduce(data);
-  end function odd_parity;
-
   function to_integer (data : in boolean) return integer is
   begin
     if data then

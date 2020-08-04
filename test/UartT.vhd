@@ -24,6 +24,7 @@ library ieee;
 
 library osvvm;
   use osvvm.RandomPkg.all;
+  use osvvm.CoveragePkg.all;
 
 use std.env.all;
 
@@ -69,9 +70,9 @@ architecture sim of UartT is
     );
   end component UartRx;
 
-  constant c_data_length : positive range 5 to 8 := 8;
-  constant c_parity : boolean := true;
-  constant c_clk_div : natural := 10;
+  constant c_data_length : positive range 5 to 9 := 8;
+  constant c_parity      : boolean := true;
+  constant c_clk_div     : natural := 10;
 
   signal s_reset_n   : std_logic := '0';
   signal s_clk       : std_logic := '1';
@@ -87,8 +88,10 @@ architecture sim of UartT is
   signal s_tx_uart   : std_logic := '1';
   signal s_rx_uart   : std_logic := '1';
 
-  signal s_error_inject : boolean := false;
+  signal s_error_inject   : boolean := false;
   signal s_error_injected : boolean := false;
+
+  shared variable sv_uart_err_coverage : CovPType;
 
   procedure injectError (signal inject : out boolean) is
     variable v_injected : boolean;
@@ -96,6 +99,7 @@ architecture sim of UartT is
   begin
     v_random.InitSeed(v_random'instance_name & to_string(now));
     loop
+      -- Wait for new UART transmission
       v_injected := false;
       wait until s_tx_valid = '1' and s_tx_accept = '1';
       wait until falling_edge(s_tx_uart);
@@ -104,10 +108,12 @@ architecture sim of UartT is
         wait until rising_edge(s_clk);
       end loop;
       -- Possibly distort one of the data bits
+      -- and update coverage object
       for i in 0 to c_data_length-1 loop
         if (not v_injected and v_random.DistValInt(((0, 9), (1, 1))) = 1) then
           v_injected := true;
           inject     <= true;
+          sv_uart_err_coverage.ICover(i);
           report "Injected transmit error on bit #" & to_string(i);
         end if;
         for y in 0 to c_clk_div-1 loop
@@ -140,6 +146,7 @@ begin
 
 
   -- Error injection based on random
+  sv_uart_err_coverage.AddBins(GenBin(0, c_data_length-1));
   injectError(s_error_inject);
   s_rx_uart <= s_tx_uart when not s_error_inject else not(s_tx_uart);
 
@@ -207,7 +214,9 @@ begin
       end if;
     end loop;
     wait for 10 us;
-    stop(0);
+    sv_uart_err_coverage.SetMessage("UART bit error coverage");
+    sv_uart_err_coverage.WriteBin;
+    finish(0);
   end process TestP;
 
 

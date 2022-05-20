@@ -3,23 +3,28 @@ SYN_SRC := ../syn
 CMN_SRC := ../common
 OSVVM_DIR := ../lib/OSVVM
 OSVVM_SRC := \
+  $(OSVVM_DIR)/TextUtilPkg.vhd \
+  $(OSVVM_DIR)/ResolutionPkg.vhd \
   $(OSVVM_DIR)/NamePkg.vhd \
   $(OSVVM_DIR)/OsvvmGlobalPkg.vhd \
   $(OSVVM_DIR)/VendorCovApiPkg.vhd \
   $(OSVVM_DIR)/TranscriptPkg.vhd \
-  $(OSVVM_DIR)/TextUtilPkg.vhd \
   $(OSVVM_DIR)/AlertLogPkg.vhd \
-  $(OSVVM_DIR)/MessagePkg.vhd \
+  $(OSVVM_DIR)/NameStorePkg.vhd \
+  $(OSVVM_DIR)/MessageListPkg.vhd \
   $(OSVVM_DIR)/SortListPkg_int.vhd \
   $(OSVVM_DIR)/RandomBasePkg.vhd \
   $(OSVVM_DIR)/RandomPkg.vhd \
+  $(OSVVM_DIR)/RandomProcedurePkg.vhd \
   $(OSVVM_DIR)/CoveragePkg.vhd \
-  $(OSVVM_DIR)/MemoryPkg.vhd \
   $(OSVVM_DIR)/ScoreboardGenericPkg.vhd \
   $(OSVVM_DIR)/ScoreboardPkg_slv.vhd \
   $(OSVVM_DIR)/ScoreboardPkg_int.vhd \
-  $(OSVVM_DIR)/ResolutionPkg.vhd \
+  $(OSVVM_DIR)/ResizePkg.vhd \
+  $(OSVVM_DIR)/MemoryPkg.vhd \
   $(OSVVM_DIR)/TbUtilPkg.vhd \
+  $(OSVVM_DIR)/ReportPkg.vhd \
+	$(OSVVM_DIR)/OsvvmTypesPkg.vhd \
   $(OSVVM_DIR)/OsvvmContext.vhd
 VHD08_SRC := vhdl_2008
 VHD_STD := 08

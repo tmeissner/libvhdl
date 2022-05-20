@@ -97,6 +97,7 @@ begin
 
   --* Save local data input when new data is provided and
   --* we're not inside a running SPI transmission
+  --* Beware: Last saved data before a started SPI transmission "wins"
   SendRegisterP : process (Reset_n_i, Clk_i) is
   begin
     if (Reset_n_i = '0') then

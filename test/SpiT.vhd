@@ -2,23 +2,14 @@ library ieee;
   use ieee.std_logic_1164.all;
   use ieee.numeric_std.all;
 
---+ including vhdl 2008 libraries
---+ These lines can be commented out when using
---+ a simulator with built-in VHDL 2008 support
---library ieee_proposed;
---  use ieee_proposed.standard_additions.all;
---  use ieee_proposed.std_logic_1164_additions.all;
---  use ieee_proposed.numeric_std_additions.all;
-
 library osvvm;
   use osvvm.RandomPkg.all;
 
 library libvhdl;
-  use libvhdl.AssertP.all;
   use libvhdl.SimP.all;
-  use libvhdl.QueueP.all;
   use libvhdl.UtilsP.all;
 
+use std.env.all;
 
 
 entity SpiT is
@@ -100,15 +91,28 @@ architecture sim of SpiT is
   --+ test done array with entry for each test
   signal s_test_done : boolean_vector(t_spi_mode'low to 4*t_spi_mode'high+3) := (others => false);
 
+  package SlvQueue is new libvhdl.QueueP
+    generic map (
+      QUEUE_TYPE => std_logic_vector(C_DATA_WIDTH-1 downto 0),
+      MAX_LEN    => 32,
+      to_string  => to_hstring
+    );
+
 
 begin
 
 
   --* testbench global clock
-  s_clk <= not(s_clk) after C_PERIOD/2 when not(and_reduce(s_test_done)) else '0';
+  s_clk <= not(s_clk) after C_PERIOD/2;
   --* testbench global reset
   s_reset_n <= '1' after 100 ns;
 
+
+  ControlP : process is
+  begin
+    wait until and s_test_done;
+    finish(0);
+  end process ControlP;
 
 
   --* Generate tests for both direction
@@ -131,8 +135,8 @@ begin
       signal s_dout_valid  : std_logic;
       signal s_dout_accept : std_logic;
 
-      shared variable sv_mosi_queue : t_list_queue;
-      shared variable sv_miso_queue : t_list_queue;
+      shared variable sv_mosi_queue : SlvQueue.t_list_queue;
+      shared variable sv_miso_queue : SlvQueue.t_list_queue;
 
 
     begin
@@ -140,8 +144,8 @@ begin
 
         QueueInitP : process is
         begin
-          sv_mosi_queue.init(32);
-          sv_miso_queue.init(32);
+          sv_mosi_queue.init(false);
+          sv_miso_queue.init(false);
           wait;
         end process QueueInitP;
 
@@ -218,7 +222,9 @@ begin
           wait until rising_edge(s_clk) and s_dout_valid = '1';
           s_dout_accept <= '1';
           sv_miso_queue.pop(v_queue_data);
-          assert_equal(s_dout, v_queue_data);
+          assert s_dout = v_queue_data
+            report "SPI master MISO error: Received 0x" & to_hstring(s_dout) & ", expected 0x" & to_hstring(v_queue_data)
+            severity failure;
           wait until rising_edge(s_clk);
           s_dout_accept <= '0';
         end loop;
@@ -265,7 +271,9 @@ begin
                      cpha     => mode mod 2
           );
           sv_mosi_queue.pop(v_queue_data);
-          assert_equal(v_receive_data, v_queue_data);
+          assert v_receive_data = v_queue_data
+            report "SPI master MOSI error: Received 0x" & to_hstring(v_receive_data) & ", expected 0x" & to_hstring(v_queue_data)
+            severity failure;
         end loop;
         wait;
       end process SpiSlaveP;
@@ -290,8 +298,8 @@ begin
       signal s_dout_valid  : std_logic;
       signal s_dout_accept : std_logic;
 
-      shared variable sv_mosi_queue : t_list_queue;
-      shared variable sv_miso_queue : t_list_queue;
+      shared variable sv_mosi_queue : SlvQueue.t_list_queue;
+      shared variable sv_miso_queue : SlvQueue.t_list_queue;
 
 
     begin
@@ -299,8 +307,8 @@ begin
 
         QueueInitP : process is
         begin
-          sv_mosi_queue.init(32);
-          sv_miso_queue.init(32);
+          sv_mosi_queue.init(false);
+          sv_miso_queue.init(false);
           wait;
         end process QueueInitP;
 
@@ -333,7 +341,9 @@ begin
                       period   => C_PERIOD * 10
           );
           sv_miso_queue.pop(v_queue_data);
-          assert_equal(v_receive_data, v_queue_data);
+          assert v_receive_data = v_queue_data
+            report "SPI slave MISO error: Received 0x" & to_hstring(v_receive_data) & ", expected 0x" & to_hstring(v_queue_data)
+            severity failure;
         end loop;
         report "INFO: SpiSlave (direction=" & to_string(direction) & ", mode=" & to_string(mode) & ") test successfully";
         s_test_done(mode+8+direction*4) <= true;
@@ -360,7 +370,7 @@ begin
       end process SpiSlaveStimP;
 
 
-      i_SpiSlaveE : SpiSlaveE
+      i_SpiSlaveE : entity work.SpiSlaveE
       generic map (
         G_DATA_WIDTH => C_DATA_WIDTH,
         G_DATA_DIR   => direction,
@@ -395,7 +405,9 @@ begin
           wait until rising_edge(s_clk) and s_dout_valid = '1';
           s_dout_accept <= '1';
           sv_mosi_queue.pop(v_queue_data);
-          assert_equal(s_dout, v_queue_data);
+          assert s_dout = v_queue_data
+            report "SPI slave MOSI error: Received 0x" & to_hstring(s_dout) & ", expected 0x" & to_hstring(v_queue_data)
+            severity failure;
           wait until rising_edge(s_clk);
           s_dout_accept <= '0';
         end loop;

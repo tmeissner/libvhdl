@@ -26,7 +26,7 @@ VHD_STD := 08
 
 
 .PHONY: all
-all: queue dict stack sim wishbone uart
+all: queue dict stack sim wishbone uart spi
 
 
 OsvvmContext.o: $(OSVVM_SRC)
@@ -59,7 +59,7 @@ simt: OsvvmContext.o UtilsP.o AssertP.o QueueP.o SimP.o SimT.vhd
 	ghdl -a --std=$(VHD_STD) SimT.vhd
 	ghdl -e --std=$(VHD_STD) $@
 
-spit: OsvvmContext.o UtilsP.o $(SYN_SRC)/SpiSlaveE.vhd $(SYN_SRC)/SpiMasterE.vhd SpiT.vhd
+spit: OsvvmContext.o UtilsP.o QueueP.o SimP.o $(SYN_SRC)/SpiSlaveE.vhd $(SYN_SRC)/SpiMasterE.vhd SpiT.vhd
 	ghdl -a --std=$(VHD_STD) -fpsl $(SYN_SRC)/SpiSlaveE.vhd $(SYN_SRC)/SpiMasterE.vhd
 	ghdl -a --std=$(VHD_STD) -fpsl SpiT.vhd
 	ghdl -e --std=$(VHD_STD) $@

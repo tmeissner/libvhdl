@@ -4,7 +4,7 @@ The original repository is now located on my own git-server at [https://git.good
 It is mirrored to github with every push, so both should be in sync.
 
 # libvhdl
-A LGPL3 licensed library of reusable components for VHDL designs and testbenches.
+A permissive licensed library of reusable components for VHDL designs and testbenches.
 
 The intention of this library is not to realize the most optimized and highest performing code.
 Instead it serves more as an example how to implement various things in VHDL and test them efficiently.

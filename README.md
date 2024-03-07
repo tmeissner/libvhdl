@@ -1,4 +1,4 @@
-[![tests](https://github.com/tmeissner/libvhdl/workflows/tests/badge.svg?branch=master)](https://github.com/tmeissner/libvhdl/actions?query=workflow%3Atests)
+[![](https://img.shields.io/github/actions/workflow/status/tmeissner/libvhdl/Test.yml?style=flat-square&logo=Github%20Actions&logoColor=fff&label=Test)](https://github.com/tmeissner/libvhdl/actions/workflows/Test.yml)
 
 The original repository is now located on my own git-server at [https://git.goodcleanfun.de/tmeissner/libvhdl](https://git.goodcleanfun.de/tmeissner/libvhdl)
 It is mirrored to github with every push, so both should be in sync.
